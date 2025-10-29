@@ -1,0 +1,6 @@
+{"id": "required_updates_sync_loop", "title": "Establish Required-Updates sync loop", "status": "done", "notes": "Agent.md updated with mandatory loop and logging requirements.", "updated_at": "2025-02-14T20:45:00Z"}
+{"id": "ui_instrumentation_high_contrast", "title": "Add automated high-contrast UI instrumentation", "status": "pending", "notes": "Need tests that flag low-contrast widgets and surface alerts in the UI.", "updated_at": "2025-02-14T20:45:00Z"}
+{"id": "sync_status_telemetry", "title": "Expose real-time sync status telemetry", "status": "pending", "notes": "Show drift between .codex_local_agent artifacts and repo files.", "updated_at": "2025-02-14T20:45:00Z"}
+{"id": "memory_mirroring_panel", "title": "Mirror dataset memory into a summarized context view", "status": "pending", "notes": "Build fast lookup summary for dataset/memory.jsonl entries.", "updated_at": "2025-02-14T20:45:00Z"}
+{"id": "context_summarizer", "title": "Generate rolling context summaries", "status": "pending", "notes": "Automate condensed summaries of chats and diffs for long sessions.", "updated_at": "2025-02-14T20:45:00Z"}
+{"id": "pipeline_health_monitors", "title": "Add OCR/chat/diff pipeline health monitors", "status": "pending", "notes": "Add heartbeat checks covering OCR, chat logging, and diff staging.", "updated_at": "2025-02-14T20:45:00Z"}
