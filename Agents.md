@@ -18,6 +18,24 @@
 [ Implemented-Updates.md ]→ shipped ledger (what landed, with links/diffs)
 ```
 
+## Required-Updates Sync Loop (MANDATORY)
+
+- Reread Agent.md, Required-Updates.md, and Dev_Logic/vs_bridge.md before any planning or code edits.
+- Extract all missing behaviors from Required-Updates.md and append task stubs to .codex_local_agent/memory/logic_inbox.jsonl (one JSON object per line).
+- Implement tasks incrementally under local-first, sandboxed profiles; never auto-execute without explicit approval.
+- Always log to:
+    • docs/codex-local/required_updates_progress.md (status entries with timestamps),
+    • docs/changes/CHANGELOG.md (what changed & why),
+    • logs/session_<TODAY>.md (objective, touched files, problems, next).
+- Respect high-contrast UI policy (light text on dark; NEVER low contrast).
+- VS Bridge contract:
+    • When “VS Mode” is ON (config editor_bridge="vscode"), open files/diffs in VS Code and rely on its SCM/diff UI; execution/apply remains in the local Agent.
+    • Copilot/Agent may be used for reasoning ONLY when explicitly invoked; execution/apply remains local and audited.
+- Offline-first & privacy:
+    • Default deny network. Any remote provider must be explicitly enabled and audited; secrets are injected via Vault only.
+- Final gate:
+    • Before claiming completion, run the Implementation Check Orchestrator and update Implemented-Updates.md.
+
 Rules of motion:
 - If it’s **planned**, it belongs in **Required-Updates.md**.
 - If it **exists now**, it must be described in **README.md** and indexed in **Implemented-Updates.md** (or explicitly marked TODO here until docs catch up).
