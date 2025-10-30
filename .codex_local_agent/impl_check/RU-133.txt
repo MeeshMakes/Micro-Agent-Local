@@ -1,0 +1,6 @@
+[RU-133] DataFrame Viewer & CSV Toolkit
+Status: verified
+Checks:
+- python -m pytest -q
+Notes:
+- CLI commands `agent` and `sample` executed in tests to confirm pipeline output.

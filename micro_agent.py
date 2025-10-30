@@ -151,6 +151,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Tuple
 
+from system_tools.data_viewer import DataViewManager, DataTable, table_to_markdown
 from PySide6 import QtWidgets, QtCore, QtGui
 
 
@@ -2198,6 +2199,225 @@ class LeftDockStack(QtWidgets.QScrollArea):
         self.setVisible(any_visible)
 
 
+class DataViewApp(QtWidgets.QFrame):
+    """Mini-app for inspecting CSV/TSV/Parquet files."""
+
+    def __init__(self, console_logger=None, parent=None):
+        super().__init__(parent)
+        self.console_log = console_logger or (lambda msg: None)
+        self.manager = DataViewManager()
+        self.current_table: Optional[DataTable] = None
+        self.display_rows: List[Dict[str, Any]] = []
+
+        self.setFrameStyle(QtWidgets.QFrame.Box | QtWidgets.QFrame.Plain)
+        self.setLineWidth(1)
+        # High-contrast styling: bright text on dark backgrounds is intentional for accessibility.
+        self.setStyleSheet(
+            f"QFrame {{ background-color:{BG_PANEL}; color:{FG_TEXT}; border:1px solid {BORDER_COLOR}; }}"
+            f"QLabel {{ color:{FG_TEXT}; background-color:{BG_PANEL}; }}"
+            f"QLineEdit {{ background-color:{BG_TEXTBOX}; color:{FG_TEXT}; border:1px solid {BORDER_COLOR}; }}"
+            f"QPushButton {{ background-color:{BG_WINDOW}; color:{FG_TEXT}; border:1px solid {BORDER_COLOR}; padding:4px 8px; }}"
+            f"QPushButton:hover {{ background-color:{ACCENT_FOCUS}; color:{BG_PANEL}; }}"
+            f"QComboBox {{ background-color:{BG_TEXTBOX}; color:{FG_TEXT}; border:1px solid {BORDER_COLOR}; }}"
+            f"QSpinBox {{ background-color:{BG_TEXTBOX}; color:{FG_TEXT}; border:1px solid {BORDER_COLOR}; }}"
+            f"QGroupBox {{ border:1px solid {BORDER_COLOR}; margin-top:12px; color:{FG_TEXT}; }}"
+            f"QGroupBox::title {{ subcontrol-origin: margin; left:8px; padding:0 4px; background-color:{BG_PANEL}; color:{FG_TEXT}; }}"
+        )
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(6)
+
+        controls = QtWidgets.QGridLayout()
+        controls.setHorizontalSpacing(6)
+        controls.setVerticalSpacing(4)
+
+        self.file_edit = QtWidgets.QLineEdit()
+        self.browse_btn = QtWidgets.QPushButton("Browse…")
+        self.load_btn = QtWidgets.QPushButton("Load")
+
+        controls.addWidget(QtWidgets.QLabel("File"), 0, 0)
+        controls.addWidget(self.file_edit, 0, 1, 1, 2)
+        controls.addWidget(self.browse_btn, 0, 3)
+        controls.addWidget(self.load_btn, 0, 4)
+
+        self.filter_edit = QtWidgets.QLineEdit()
+        self.column_combo = QtWidgets.QComboBox()
+        self.column_combo.addItem("(all columns)")
+        controls.addWidget(QtWidgets.QLabel("Filter"), 1, 0)
+        controls.addWidget(self.filter_edit, 1, 1)
+        controls.addWidget(QtWidgets.QLabel("Column"), 1, 2)
+        controls.addWidget(self.column_combo, 1, 3, 1, 2)
+
+        self.sample_spin = QtWidgets.QSpinBox()
+        self.sample_spin.setRange(0, 50000)
+        self.sample_spin.setValue(1000)
+        self.preview_spin = QtWidgets.QSpinBox()
+        self.preview_spin.setRange(10, 10000)
+        self.preview_spin.setValue(500)
+        controls.addWidget(QtWidgets.QLabel("Sample"), 2, 0)
+        controls.addWidget(self.sample_spin, 2, 1)
+        controls.addWidget(QtWidgets.QLabel("Preview limit"), 2, 2)
+        controls.addWidget(self.preview_spin, 2, 3)
+
+        self.export_btn = QtWidgets.QPushButton("Export filtered…")
+        controls.addWidget(self.export_btn, 2, 4)
+
+        layout.addLayout(controls)
+
+        self.summary_label = QtWidgets.QLabel("No file loaded")
+        layout.addWidget(self.summary_label)
+
+        self.table = QtWidgets.QTableWidget()
+        self.table.setAlternatingRowColors(True)
+        self.table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.table.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.table.horizontalHeader().setStretchLastSection(True)
+        # High-contrast grid styling keeps white text on dark background.
+        self.table.setStyleSheet(
+            f"QTableWidget {{ background-color:{BG_WINDOW}; color:{FG_TEXT}; gridline-color:{BORDER_COLOR}; }}"
+            f"QHeaderView::section {{ background-color:{BG_PANEL}; color:{FG_TEXT}; border:1px solid {BORDER_COLOR}; }}"
+        )
+        layout.addWidget(self.table, stretch=1)
+
+        recents_box = QtWidgets.QGroupBox("Recent files")
+        recents_layout = QtWidgets.QVBoxLayout(recents_box)
+        recents_layout.setContentsMargins(6, 18, 6, 6)
+        self.recent_list = QtWidgets.QListWidget()
+        # High contrast list styling with bright text.
+        self.recent_list.setStyleSheet(
+            f"QListWidget {{ background-color:{BG_WINDOW}; color:{FG_TEXT}; border:1px solid {BORDER_COLOR}; }}"
+            f"QListWidget::item:selected {{ background-color:{ACCENT_FOCUS}; color:{BG_PANEL}; }}"
+        )
+        recents_layout.addWidget(self.recent_list)
+        layout.addWidget(recents_box)
+
+        self.browse_btn.clicked.connect(self._open_file_dialog)
+        self.load_btn.clicked.connect(self.load_current_file)
+        self.export_btn.clicked.connect(self.export_filtered_rows)
+        self.recent_list.itemActivated.connect(self._load_recent_item)
+
+        self.refresh_recents()
+
+    # ------------------------------------------------------------------
+    # UI helpers
+    # ------------------------------------------------------------------
+    def _open_file_dialog(self):
+        path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self,
+            "Select data file",
+            str(Path.cwd()),
+            "Data Files (*.csv *.tsv *.parquet *.pq);;All Files (*)",
+        )
+        if path:
+            self.file_edit.setText(path)
+
+    def _load_recent_item(self, item):
+        path = item.data(QtCore.Qt.UserRole)
+        if path:
+            self.file_edit.setText(path)
+            self.load_current_file()
+
+    def refresh_recents(self):
+        self.recent_list.clear()
+        for entry in self.manager.list_recent():
+            path = entry.get("path", "")
+            display = f"{path} ({entry.get('row_count', '?')} rows)"
+            list_item = QtWidgets.QListWidgetItem(display)
+            list_item.setData(QtCore.Qt.UserRole, path)
+            self.recent_list.addItem(list_item)
+
+    def _populate_columns(self, columns: List[str]):
+        current = self.column_combo.currentText()
+        self.column_combo.blockSignals(True)
+        self.column_combo.clear()
+        self.column_combo.addItem("(all columns)")
+        for col in columns:
+            self.column_combo.addItem(col)
+        if current and current in columns:
+            index = self.column_combo.findText(current)
+            if index >= 0:
+                self.column_combo.setCurrentIndex(index)
+        self.column_combo.blockSignals(False)
+
+    def _populate_table(self, columns: List[str], rows: List[Dict[str, Any]]):
+        self.table.clear()
+        self.table.setRowCount(len(rows))
+        self.table.setColumnCount(len(columns))
+        self.table.setHorizontalHeaderLabels(columns)
+        for r, row in enumerate(rows):
+            for c, column in enumerate(columns):
+                item = QtWidgets.QTableWidgetItem(str(row.get(column, "")))
+                item.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+                self.table.setItem(r, c, item)
+
+    # ------------------------------------------------------------------
+    # Actions
+    # ------------------------------------------------------------------
+    def load_current_file(self):
+        path_text = self.file_edit.text().strip()
+        if not path_text:
+            self.console_log("[data-view] Provide a data file path before loading.")
+            return
+
+        sample = self.sample_spin.value()
+        preview_limit = self.preview_spin.value()
+        filter_text = self.filter_edit.text().strip()
+        column = self.column_combo.currentText()
+        column_filter = column if column and column != "(all columns)" else None
+
+        try:
+            table = self.manager.load_table(
+                Path(path_text),
+                limit=preview_limit,
+                sample=sample,
+                filter_text=filter_text,
+                filter_column=column_filter,
+            )
+        except Exception as exc:
+            QtWidgets.QMessageBox.critical(self, "Data Viewer", str(exc))
+            self.console_log(f"[data-view] Error: {exc}")
+            return
+
+        self.current_table = table
+        self.display_rows = table.rows
+        self._populate_columns(table.columns)
+        self._populate_table(table.columns, table.rows)
+        summary = (
+            f"Previewing {len(table.rows)} rows (total {table.total_rows}) from {table.source}"
+        )
+        self.summary_label.setText(summary)
+        self.console_log(f"[data-view] {summary}")
+        self.console_log(table_to_markdown(table, max_rows=20))
+        self.refresh_recents()
+
+    def export_filtered_rows(self):
+        if not self.display_rows:
+            QtWidgets.QMessageBox.information(
+                self, "Data Viewer", "No rows are loaded to export yet."
+            )
+            return
+
+        destination, _ = QtWidgets.QFileDialog.getSaveFileName(
+            self,
+            "Export filtered rows",
+            str(Path.cwd() / "filtered.csv"),
+            "CSV Files (*.csv);;All Files (*)",
+        )
+        if not destination:
+            return
+        try:
+            self.manager.export_rows(self.display_rows, self.current_table.columns, Path(destination))
+        except Exception as exc:
+            QtWidgets.QMessageBox.critical(self, "Data Viewer", str(exc))
+            self.console_log(f"[data-view] Export failed: {exc}")
+            return
+        self.console_log(
+            f"[data-view] Exported {len(self.display_rows)} rows to {destination}"
+        )
+
+
+
 class DockBar(QtWidgets.QWidget):
     """
     Row of small square icon buttons aligned right-to-left.
@@ -2206,6 +2426,7 @@ class DockBar(QtWidgets.QWidget):
 
     requestToggleScriptCreator = QtCore.Signal()
     requestToggleAgentManager  = QtCore.Signal()
+    requestToggleDataViewer    = QtCore.Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -2219,6 +2440,11 @@ class DockBar(QtWidgets.QWidget):
         lay = QtWidgets.QHBoxLayout(self)
         lay.setContentsMargins(4,2,4,2)
 
+        self.btn_data_view = QtWidgets.QToolButton()
+        self.btn_data_view.setText("D")
+        self.btn_data_view.setCheckable(True)
+        self.btn_data_view.clicked.connect(self.requestToggleDataViewer.emit)
+
         self.btn_agent_mgr = QtWidgets.QToolButton()
         self.btn_agent_mgr.setText("A")  # high contrast text
         self.btn_agent_mgr.setCheckable(True)
@@ -2231,6 +2457,7 @@ class DockBar(QtWidgets.QWidget):
 
         # Icons align right-to-left
         lay.addStretch(1)
+        lay.addWidget(self.btn_data_view)
         lay.addWidget(self.btn_agent_mgr)
         lay.addWidget(self.btn_script_creator)
 
@@ -2239,6 +2466,8 @@ class DockBar(QtWidgets.QWidget):
             self.btn_agent_mgr.setChecked(active)
         elif key == "script_creator":
             self.btn_script_creator.setChecked(active)
+        elif key == "data_view":
+            self.btn_data_view.setChecked(active)
 
 
 # --------------------------
@@ -2296,6 +2525,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # mini-app instances
         self.script_creator_app = ScriptCreatorApp()
         self.agent_manager_app = AgentManagerApp(self.pending_cmd)
+        self.data_view_app = DataViewApp(console_logger=self.console.log_line)
 
         # wire mini-app signals
         self.script_creator_app.requestCreateProject.connect(self._handle_create_project)
@@ -2307,6 +2537,9 @@ class MainWindow(QtWidgets.QMainWindow):
         )
         self.dock_bar.requestToggleAgentManager.connect(
             lambda: self._toggle_mini_app("agent_manager")
+        )
+        self.dock_bar.requestToggleDataViewer.connect(
+            lambda: self._toggle_mini_app("data_view")
         )
 
         # connect signals main <-> chat panel
@@ -2461,6 +2694,11 @@ class MainWindow(QtWidgets.QMainWindow):
         elif key == "agent_manager":
             self.left_dock_stack.toggle_panel("agent_manager", self.agent_manager_app)
             self.dock_bar.set_active("agent_manager", self.agent_manager_app.isVisible())
+        elif key == "data_view":
+            self.left_dock_stack.toggle_panel("data_view", self.data_view_app)
+            self.dock_bar.set_active("data_view", self.data_view_app.isVisible())
+            if self.data_view_app.isVisible():
+                self.data_view_app.refresh_recents()
 
         # Refresh dataset / authority info in AgentManagerApp each toggle
         if key == "agent_manager":
