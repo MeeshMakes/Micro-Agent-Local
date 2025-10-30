@@ -1781,10 +1781,29 @@ class ChatPanel(QtWidgets.QWidget):
         left_layout = QtWidgets.QVBoxLayout(left_widget)
         left_layout.setContentsMargins(0, 0, 0, 0)
         left_layout.setSpacing(6)
-        left_layout.addWidget(self.transcript, 5)
-        left_layout.addWidget(self.chat_input, 2)
-        left_layout.addWidget(self.pending_bar)
 
+        # transcript + input share a vertical splitter so the area behaves like
+        # one tall column per spec. Users can drag to allocate height but both
+        # widgets stay stacked vertically.
+        chat_stack = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        chat_stack.addWidget(self.transcript)
+        chat_stack.addWidget(self.chat_input)
+        chat_stack.setSizes([520, 180])
+        left_layout.addWidget(chat_stack, 7)
+
+        # Pending command bar sits directly below the chat block.
+        left_layout.addWidget(self.pending_bar, 0)
+
+        # Ask / Do Work toggles live beside Send so mode is obvious before send.
+        send_mode_row = QtWidgets.QHBoxLayout()
+        send_mode_row.addWidget(self.attach_btn)
+        send_mode_row.addWidget(self.send_btn)
+        send_mode_row.addWidget(self.ask_btn)
+        send_mode_row.addWidget(self.dowork_btn)
+        send_mode_row.addStretch(1)
+        left_layout.addLayout(send_mode_row)
+
+        # Brain selector just below mode row to keep controls under input block.
         brain_row = QtWidgets.QHBoxLayout()
         brain_label = QtWidgets.QLabel("Brain:")
         brain_label.setStyleSheet(
@@ -1795,23 +1814,7 @@ class ChatPanel(QtWidgets.QWidget):
         brain_row.addStretch(1)
         left_layout.addLayout(brain_row)
 
-        mode_row = QtWidgets.QHBoxLayout()
-        mode_label = QtWidgets.QLabel("Send as:")
-        mode_label.setStyleSheet(
-            f"QLabel {{ color:{FG_TEXT}; background-color:{BG_PANEL}; font-weight:bold; }}"
-        )
-        mode_row.addWidget(mode_label)
-        mode_row.addWidget(self.ask_btn)
-        mode_row.addWidget(self.dowork_btn)
-        mode_row.addStretch(1)
-        left_layout.addLayout(mode_row)
-
-        control_row = QtWidgets.QHBoxLayout()
-        control_row.addWidget(self.attach_btn)
-        control_row.addWidget(self.send_btn)
-        control_row.addStretch(1)
-        left_layout.addLayout(control_row)
-
+        # Secondary actions remain stacked under the main controls.
         button_row_top = QtWidgets.QHBoxLayout()
         button_row_top.addWidget(self.plan_btn)
         button_row_top.addWidget(self.rem_btn)
