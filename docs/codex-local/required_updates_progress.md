@@ -10,4 +10,8 @@
 | RU-5 | Agent Manager authority + sharing extensions | ⏳ | Pending implementation (stub STUB-20251029-05). |
 | RU-26 | Update ledger cross-references | ⏳ | Pending implementation (stub STUB-20251029-06). |
 | RU-27 | Rant capture and Required Updates pipeline | ⏳ | Pending implementation (stub STUB-20251029-07). |
+| RU-133 | DataFrame Viewer & CSV Toolkit | ⏳ | Pending implementation (stub STUB-20251030-08). |
+| RU-134 | Diff Packager for External Review | ⏳ | Pending implementation (stub STUB-20251030-09). |
+| RU-135 | Legacy Project Migration Assistant | ⏳ | Pending implementation (stub STUB-20251030-10). |
+| RU-136 | System Health Dashboard | ⏳ | Pending implementation (stub STUB-20251030-11). |
 ✅ 2025-10-30T09:21:18.862474+00:00 — Seeded control files and added Required-Updates Sync Loop to Agents.md (Step A per instructions).
