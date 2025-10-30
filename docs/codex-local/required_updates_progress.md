@@ -11,3 +11,5 @@
 | RU-26 | Update ledger cross-references | ⏳ | Pending implementation (stub STUB-20251029-06). |
 | RU-27 | Rant capture and Required Updates pipeline | ⏳ | Pending implementation (stub STUB-20251029-07). |
 ✅ 2025-10-30T11:52:26Z Seeded control directories and audit scaffolding — Required-Updates:Global Agent Operations A
+
+✅ 2025-10-30T14:07:42.757012+00:00 Chat panel layout vertical stack and relocated controls — Required-Updates.md:§1
