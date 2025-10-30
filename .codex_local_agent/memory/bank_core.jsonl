@@ -1,0 +1,1 @@
+{"timestamp":"2025-10-30T11:53:27Z","rule":"Maintain canonical control directories (.codex_local_agent/memory, acceptance, diffqa, impl_check, chat/sessions, logs) with append-only files as defined in Required-Updates.md section Global Agent Operations A."}

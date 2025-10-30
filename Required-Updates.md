@@ -16965,3 +16965,26 @@ Keep this **OFF** by default so your Local Agent remains fully functional withou
 * **High-contrast UI always** — readable light text on dark, never low contrast.
 
 This document is now the canonical, self-contained procedure for installing, using, and troubleshooting VS Bridge mode alongside your Local Agent.
+
+---
+## Spec Verification Block
+STATUS: IN PROGRESS
+SNAPSHOT: 2025-10-30T11:53:27Z
+
+### Outstanding Requirements (Checklist)
+- [x] Control directories seeded — Global Agent Operations §A — Acceptance: required folders/files exist and are append-only — Evidence: docs/changes/CHANGELOG.md, docs/codex-local/required_updates_progress.md — Last Checked: 2025-10-30T11:53:27Z
+- [ ] Chat panel vertical layout and relocated controls — §1 — Acceptance: chat panel geometry updated with markdown feed and Ask/Do Work buttons near input — Evidence: Pending — Last Checked: 2025-10-30T11:53:27Z
+- [ ] Dataset capture and OCR buckets — §2 — Acceptance: dual OCR rows persisted to `.codex_local_agent/dataset/memory.jsonl` with tags/hashes — Evidence: Pending — Last Checked: 2025-10-30T11:53:27Z
+- [ ] Mini-app dock upgrades and Script Creator flows — §§3–4 — Acceptance: dock toggle, labeled icons, Script Creator automation — Evidence: Pending — Last Checked: 2025-10-30T11:53:27Z
+- [ ] Authority manager and rant ingestion pipeline — §§5 & 27 — Acceptance: allow-list visibility, Implement Required Updates runner, Task-Index sync — Evidence: Pending — Last Checked: 2025-10-30T11:53:27Z
+
+### Extended Merged Corrections
+- 2025-10-30T11:53:27Z No additional merges required; newest instructions at document end stand as written.
+
+### Evidence Index (recent)
+- CHANGELOG: docs/changes/CHANGELOG.md
+- PROGRESS: docs/codex-local/required_updates_progress.md
+- SESSIONS: logs/session_2025-10-30.md
+- ACCEPTANCE: ./.codex_local_agent/acceptance/
+- IMPL-CHECK: ./.codex_local_agent/impl_check/
+
