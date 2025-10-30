@@ -11,3 +11,7 @@
 ## 2025-10-30T10:41:51.244797+00:00
 - Implemented DataFrame viewer mini-app, CLI pipeline (agent/sample), and storage/audit scaffolding per RU-133.
 - Added automated tests for data viewer workflow and CLI sampling.
+## 2025-10-30T11:20:26.512000+00:00
+- Delivered diff packager bundles with CLI export and audit logging per RU-134.
+- Added legacy migration assistant with configurable mappings and audit trail per RU-135.
+- Introduced system health dashboard mini-app, CLI report, and persisted cards per RU-136.

@@ -1,0 +1,11 @@
+{
+  "requirement": "Legacy Project Migration Assistant",
+  "status": "done",
+  "timestamp": "2025-10-30T11:20:51.706614+00:00",
+  "evidence": {
+    "cli": "agent legacy import",
+    "tests": [
+      "tests/test_legacy_migration.py"
+    ]
+  }
+}

@@ -152,6 +152,7 @@ from datetime import datetime, timezone
 from typing import Optional, List, Dict, Tuple
 
 from system_tools.data_viewer import DataViewManager, DataTable, table_to_markdown
+from system_tools.system_health import SystemHealthMonitor, HealthCard
 from PySide6 import QtWidgets, QtCore, QtGui
 
 
@@ -2417,6 +2418,93 @@ class DataViewApp(QtWidgets.QFrame):
         )
 
 
+class HealthDashboardApp(QtWidgets.QFrame):
+    """Mini-app rendering the system health dashboard."""
+
+    def __init__(self, monitor: SystemHealthMonitor, console_logger=None, parent=None):
+        super().__init__(parent)
+        self.monitor = monitor
+        self.console_log = console_logger or (lambda msg: None)
+        self.repo: Optional[RepoSession] = None
+        self.task_manager: Optional[TaskManager] = None
+        self.pending_cmd: Optional[PendingCommand] = None
+        # High-contrast styling: bright text on dark backgrounds is intentional for accessibility.
+        self.setStyleSheet(
+            f"QFrame {{ background-color:{BG_PANEL}; color:{FG_TEXT}; border:1px solid {BORDER_COLOR}; }}"
+            f"QLabel {{ color:{FG_TEXT}; background-color:{BG_PANEL}; font-weight:bold; }}"
+            f"QPushButton {{ background-color:{BG_WINDOW}; color:{FG_TEXT}; border:1px solid {BORDER_COLOR}; padding:4px 8px; }}"
+            f"QPushButton:hover {{ background-color:{ACCENT_FOCUS}; color:{BG_PANEL}; }}"
+        )
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(6)
+
+        header = QtWidgets.QHBoxLayout()
+        title = QtWidgets.QLabel("System Health")
+        header.addWidget(title)
+        header.addStretch(1)
+        self.refresh_btn = QtWidgets.QPushButton("Refresh")
+        self.refresh_btn.clicked.connect(self.refresh_cards)
+        header.addWidget(self.refresh_btn)
+        layout.addLayout(header)
+
+        self.cards_container = QtWidgets.QWidget()
+        self.cards_layout = QtWidgets.QVBoxLayout(self.cards_container)
+        self.cards_layout.setContentsMargins(0, 0, 0, 0)
+        self.cards_layout.setSpacing(6)
+        layout.addWidget(self.cards_container)
+        layout.addStretch(1)
+
+    def set_context(
+        self,
+        repo: RepoSession,
+        task_manager: TaskManager,
+        pending_cmd: PendingCommand,
+    ) -> None:
+        self.repo = repo
+        self.task_manager = task_manager
+        self.pending_cmd = pending_cmd
+
+    def refresh_cards(self) -> None:
+        repo_root = self.repo.repo_root if self.repo and self.repo.repo_root else Path.cwd()
+        statuses: List[str] = []
+        if self.task_manager:
+            statuses = [task.status for task in self.task_manager.tasks]
+        pending = bool(self.pending_cmd and self.pending_cmd.has_command())
+        cards = self.monitor.collect(repo_root, task_statuses=statuses, pending_command=pending)
+        self.monitor.persist(cards)
+        self._render_cards(cards)
+        self.console_log(f"[health] refreshed {len(cards)} cards")
+
+    def _render_cards(self, cards: List[HealthCard]) -> None:
+        while self.cards_layout.count():
+            item = self.cards_layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+        color_map = {
+            "green": ("#10331f", "#e9ffee"),
+            "yellow": ("#3d3410", "#fff5c2"),
+            "red": ("#3a1212", "#ffd8d3"),
+        }
+        for card in cards:
+            bg, fg = color_map.get(card.status, (BG_WINDOW, FG_TEXT))
+            frame = QtWidgets.QFrame()
+            # High contrast frame uses bright text on dark background intentionally for accessibility.
+            frame.setStyleSheet(
+                f"QFrame {{ background-color:{bg}; color:{fg}; border:1px solid {BORDER_COLOR}; padding:8px; }}"
+                f"QLabel {{ color:{fg}; background-color:{bg}; }}"
+            )
+            vbox = QtWidgets.QVBoxLayout(frame)
+            title = QtWidgets.QLabel(f"{card.title} — {card.summary}")
+            vbox.addWidget(title)
+            detail_label = QtWidgets.QLabel(json.dumps(card.details, indent=2))
+            detail_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+            vbox.addWidget(detail_label)
+            self.cards_layout.addWidget(frame)
+        self.cards_layout.addStretch(1)
+
 
 class DockBar(QtWidgets.QWidget):
     """
@@ -2427,6 +2515,7 @@ class DockBar(QtWidgets.QWidget):
     requestToggleScriptCreator = QtCore.Signal()
     requestToggleAgentManager  = QtCore.Signal()
     requestToggleDataViewer    = QtCore.Signal()
+    requestToggleHealth        = QtCore.Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -2439,6 +2528,11 @@ class DockBar(QtWidgets.QWidget):
         )
         lay = QtWidgets.QHBoxLayout(self)
         lay.setContentsMargins(4,2,4,2)
+
+        self.btn_health = QtWidgets.QToolButton()
+        self.btn_health.setText("H")
+        self.btn_health.setCheckable(True)
+        self.btn_health.clicked.connect(self.requestToggleHealth.emit)
 
         self.btn_data_view = QtWidgets.QToolButton()
         self.btn_data_view.setText("D")
@@ -2457,6 +2551,7 @@ class DockBar(QtWidgets.QWidget):
 
         # Icons align right-to-left
         lay.addStretch(1)
+        lay.addWidget(self.btn_health)
         lay.addWidget(self.btn_data_view)
         lay.addWidget(self.btn_agent_mgr)
         lay.addWidget(self.btn_script_creator)
@@ -2468,6 +2563,8 @@ class DockBar(QtWidgets.QWidget):
             self.btn_script_creator.setChecked(active)
         elif key == "data_view":
             self.btn_data_view.setChecked(active)
+        elif key == "health":
+            self.btn_health.setChecked(active)
 
 
 # --------------------------
@@ -2526,6 +2623,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.script_creator_app = ScriptCreatorApp()
         self.agent_manager_app = AgentManagerApp(self.pending_cmd)
         self.data_view_app = DataViewApp(console_logger=self.console.log_line)
+        self.health_monitor = SystemHealthMonitor()
+        self.health_app = HealthDashboardApp(self.health_monitor, console_logger=self.console.log_line)
+        self.health_app.set_context(self.repo, self.task_mgr, self.pending_cmd)
 
         # wire mini-app signals
         self.script_creator_app.requestCreateProject.connect(self._handle_create_project)
@@ -2540,6 +2640,9 @@ class MainWindow(QtWidgets.QMainWindow):
         )
         self.dock_bar.requestToggleDataViewer.connect(
             lambda: self._toggle_mini_app("data_view")
+        )
+        self.dock_bar.requestToggleHealth.connect(
+            lambda: self._toggle_mini_app("health")
         )
 
         # connect signals main <-> chat panel
@@ -2699,6 +2802,11 @@ class MainWindow(QtWidgets.QMainWindow):
             self.dock_bar.set_active("data_view", self.data_view_app.isVisible())
             if self.data_view_app.isVisible():
                 self.data_view_app.refresh_recents()
+        elif key == "health":
+            self.left_dock_stack.toggle_panel("health", self.health_app)
+            self.dock_bar.set_active("health", self.health_app.isVisible())
+            if self.health_app.isVisible():
+                self.health_app.refresh_cards()
 
         # Refresh dataset / authority info in AgentManagerApp each toggle
         if key == "agent_manager":

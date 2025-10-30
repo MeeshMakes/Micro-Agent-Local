@@ -9,11 +9,15 @@ pretty-printed preview in the terminal.
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 from typing import Any
 
 from system_tools.data_viewer import DataViewManager, table_to_markdown, iter_rows_as_json
+from system_tools.diff_packager import DiffPackager
+from system_tools.legacy_migration import LegacyMigrationAssistant
+from system_tools.system_health import SystemHealthMonitor
 
 
 def _cmd_data_view(args: argparse.Namespace) -> int:
@@ -35,6 +39,46 @@ def _cmd_data_view(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_diffpkg_export(args: argparse.Namespace) -> int:
+    packager = DiffPackager()
+    attachments = [Path(p) for p in (args.attachments or [])]
+    notes_text = args.notes or ""
+    if args.notes_file:
+        notes_text += Path(args.notes_file).read_text(encoding="utf-8")
+    bundle = packager.export_bundle(
+        args.label,
+        include_status=args.include_status,
+        attachments=attachments,
+        notes=notes_text or None,
+    )
+    print(bundle.bundle_path)
+    return 0
+
+
+def _cmd_legacy_import(args: argparse.Namespace) -> int:
+    assistant = LegacyMigrationAssistant()
+    outcome = assistant.migrate(
+        Path(args.source),
+        Path(args.destination),
+        overwrite=args.force,
+        selected_keys=args.only,
+    )
+    print(json.dumps(outcome.as_dict(), indent=2))
+    return 0
+
+
+def _cmd_health_report(args: argparse.Namespace) -> int:
+    monitor = SystemHealthMonitor()
+    cards = monitor.collect(Path.cwd(), task_statuses=[], pending_command=False)
+    monitor.persist(cards)
+    if args.json:
+        print(json.dumps([c.as_dict() for c in cards], indent=2))
+    else:
+        for card in cards:
+            print(f"[{card.status.upper()}] {card.title}: {card.summary}")
+    return 0
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="agent", description="Local agent CLI")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -52,6 +96,35 @@ def _build_parser() -> argparse.ArgumentParser:
     view_parser.add_argument("--markdown", action="store_true", help="Render markdown preview instead of JSON lines")
     view_parser.add_argument("--max-rows", type=int, default=20, help="Max rows in markdown preview")
     view_parser.set_defaults(func=_cmd_data_view)
+
+    diffpkg_parser = sub.add_parser("diffpkg", help="Bundle diffs for offline review")
+    diffpkg_sub = diffpkg_parser.add_subparsers(dest="diffpkg_command", required=True)
+    export_parser = diffpkg_sub.add_parser("export", help="Export a diff bundle")
+    export_parser.add_argument("label", help="Human readable label for the bundle")
+    export_parser.add_argument("--include-status", action="store_true", help="Include git status summary")
+    export_parser.add_argument("--notes", default="", help="Inline notes to include in comments.md")
+    export_parser.add_argument("--notes-file", help="Path to markdown file with review notes")
+    export_parser.add_argument("--attachments", nargs="*", help="Attachment file paths to include")
+    export_parser.set_defaults(func=_cmd_diffpkg_export)
+
+    legacy_parser = sub.add_parser("legacy", help="Legacy project migration")
+    legacy_sub = legacy_parser.add_subparsers(dest="legacy_command", required=True)
+    import_parser = legacy_sub.add_parser("import", help="Import from a legacy agent directory")
+    import_parser.add_argument("source", help="Path to legacy agent root")
+    import_parser.add_argument("--destination", default=".", help="Destination project root")
+    import_parser.add_argument("--force", action="store_true", help="Overwrite existing targets")
+    import_parser.add_argument(
+        "--only",
+        nargs="*",
+        help="Subset of mapping keys to migrate (defaults to all)",
+    )
+    import_parser.set_defaults(func=_cmd_legacy_import)
+
+    health_parser = sub.add_parser("health", help="System health reports")
+    health_sub = health_parser.add_subparsers(dest="health_command", required=True)
+    report_parser = health_sub.add_parser("report", help="Print current system health")
+    report_parser.add_argument("--json", action="store_true", help="Emit JSON output")
+    report_parser.set_defaults(func=_cmd_health_report)
 
     return parser
 

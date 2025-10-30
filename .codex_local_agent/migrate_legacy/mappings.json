@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "mappings": [
+    {"source": "agent.yaml", "target": ".codex_local_agent/agent.yaml", "type": "file"},
+    {"source": "agent.md", "target": ".codex_local_agent/agent.md", "type": "file"},
+    {"source": "chat_history.md", "target": ".codex_local_agent/chat_history.md", "type": "file"},
+    {"source": "dataset/memory.jsonl", "target": ".codex_local_agent/dataset/memory.jsonl", "type": "file"},
+    {"source": "dataset", "target": ".codex_local_agent/dataset", "type": "dir"},
+    {"source": "logs", "target": "logs", "type": "dir"},
+    {"source": "patches", "target": ".codex_local_agent/patches", "type": "dir"}
+  ]
+}
