@@ -2739,6 +2739,261 @@ This is the spec you feed into Required-Updates.md right now. This is also what 
 ------
 
 
+## Global Agent Operations & Repo-Wide Enforcement (MANDATORY)
+
+This section adds **repo-wide requirements** so the agent can autonomously implement everything in this spec, keep evidence, and self-verify. It applies to **all future work** and must be implemented even if parts of the app are still missing.
+
+### A. Canonical control files & layout (must exist; append-only)
+
+Create and maintain these paths (create if missing; never delete history):
+
+```
+./.codex_local_agent/
+  memory/
+    bank_core.jsonl            # durable rules/architecture truths (append-only)
+    logic_inbox.jsonl          # task stubs queue (append-only; one JSON object per line)
+  acceptance/                  # acceptance records per scope
+  diffqa/                      # risk/diff notes for risky changes
+  impl_check/                  # implementation check reports/artifacts
+  chat/
+    sessions/<YYYY-MM-DD>/chat.md  # rich transcript; <think> italic dark-green; responses large white on dark
+
+./docs/codex-local/
+  required_updates_progress.md # ✅/⏳/🔒 with timestamps + spec citations
+
+./docs/changes/
+  CHANGELOG.md                 # human-readable, append-only
+
+./logs/
+  session_<YYYY-MM-DD>.md      # daily diary: Objective / Files touched / Issues / Next
+
+./Implemented-Updates.md       # completion ledger (append-only)
+./Missing-Updates.md           # pending ledger (append-only)
+```
+
+> Legacy compatibility: if `memory/logic_inbox.jsonl` already exists outside `./.codex_local_agent/`, mirror appends to it as well (do not delete either).
+
+**Acceptance**
+
+* On first run, all files/folders above exist (empty if necessary).
+* Subsequent runs do not truncate or rewrite history; only append or add new files.
+
+---
+
+### B. Required-Updates.md as authoritative work queue
+
+* **Discipline:** Before planning or editing, re-read **Required-Updates.md** fully. Newer logic near the **bottom** overrides older text; when merging is better, add an **“Extended Merged Corrections”** note at the bottom (append-only).
+* **Gap hunting:** For **every** unmet/partial requirement, **append** a JSON object to `./.codex_local_agent/memory/logic_inbox.jsonl`:
+
+```json
+{"timestamp":"<UTC ISO>","area":"<file|module|UI|system>","need":"<what must exist or change>","why":"Required-Updates.md:<section-or-keyword>","status":"todo","blocked_on":"","urgency":"high|med|low","modes":{"ask":true,"do_work":true}}
+```
+
+**Acceptance**
+
+* Fresh session produces new stubs for newly discovered gaps without removing prior stubs.
+* Each stub references the spec section/keyword.
+
+---
+
+### C. Ask (Plan) vs Do Work (Execute) modes
+
+* **Ask / Plan:** one coherent plan only; **no source edits**. The plan lists files/dirs to touch, data schemas, UI work, acceptance & impl-check updates, and expected diffs. Then stop.
+* **Do Work / Execute:** implement now; pick the top stub and act; all edits logged (Section E).
+
+**UI Mapping (minimum)**
+
+* **Ask** button → emits plan, no edits.
+* **Do Work** button → applies guarded implementation flow (diff review → apply → log).
+
+**Acceptance**
+
+* Toggling between modes is explicit and recorded in session logs.
+* A plan artifact exists when Ask mode is used.
+
+---
+
+### D. High-contrast UI & offline-first (global rules)
+
+* **UI:** Always render **readable light text on dark backgrounds**; never low-contrast pairings. Add inline comments in UI code stating this rule.
+* **Offline-first:** Default deny network. Any online provider/model requires explicit user enablement and an audit entry (token/costs if applicable).
+
+**Acceptance**
+
+* Visual scan of new/updated widgets shows high contrast.
+* Network calls are disabled by default; enabling them logs an audit record.
+
+---
+
+### E. Auditable evidence on every change (append-only)
+
+When a stub is implemented (or advanced):
+
+1. **Progress** → append line in `./docs/codex-local/required_updates_progress.md`
+   `✅ <UTC> <summary> — Required-Updates:<section>`
+
+   * Use ⏳ for in-progress, 🔒 for blocked with reason.
+
+2. **Changelog** → append entry in `./docs/changes/CHANGELOG.md`
+   Include **what** changed (files/paths/classes), **why** (spec citation), **where** (paths/commit/patch artifact).
+
+3. **Session** → append to `./logs/session_<YYYY-MM-DD>.md`
+   Objective, Files touched, Issues, Next steps.
+
+4. **Durable rules** (if any) → append to `./.codex_local_agent/memory/bank_core.jsonl`.
+
+5. **Acceptance / Impl-check** → update or create acceptance files; if scope is claimable as “done,” produce/refresh artifacts under `./.codex_local_agent/impl_check/`.
+
+**Acceptance**
+
+* All five artifacts appear per implemented stub, with timestamps and references.
+
+---
+
+### F. Spec Verification Block (must exist at end of Required-Updates.md)
+
+Append this block to the end of **Required-Updates.md** (keep updated):
+
+```
+## Spec Verification Block
+STATUS: <IN PROGRESS | ALL SPEC REQUIREMENTS IMPLEMENTED AND VERIFIED>
+SNAPSHOT: <UTC ISO>
+
+### Outstanding Requirements (Checklist)
+- [ ] <req-id or title> — <section/keyword> — Acceptance: <brief AC> — Evidence: <paths/links> — Last Checked: <UTC ISO>
+
+### Extended Merged Corrections
+- <YYYY-MM-DD>: <short ruling reconciling older vs newer text; why; what changed>
+
+### Evidence Index (recent)
+- CHANGELOG: docs/changes/CHANGELOG.md
+- PROGRESS: docs/codex-local/required_updates_progress.md
+- SESSIONS: logs/session_<YYYY-MM-DD>.md
+- ACCEPTANCE: ./.codex_local_agent/acceptance/
+- IMPL-CHECK: ./.codex_local_agent/impl_check/
+```
+
+**Acceptance**
+
+* Block exists; checklist reflects current gaps; evidence links resolve to real entries.
+
+---
+
+### G. Per-script agents, templates, and editor (non-blocking)
+
+**Structure**
+
+```
+AssetsMirror/
+  Scripts/
+    <ScriptName>/
+      versions/
+      chats/
+      codex_tasks/
+      error_buckets/
+      Agent.md
+```
+
+**Behavior**
+
+* **Per-script `Agent.md`** describes role, constraints, wiring, guardrails, acceptance notes. Codex Local **must** read it before editing.
+* **Script Builder** window:
+
+  * Inputs: Script Name, Category (from `Templates/default_scripts/*`), Target role.
+  * On confirm: create folder, copy template `.cs` to `versions/` as v0001, copy `*.Agent.md`, register in index.
+* **Edit Agent.md** popup is **modeless** (main GUI remains usable). Save writes atomically.
+
+**Acceptance**
+
+* Creating a script produces both the first version and `Agent.md`.
+* Editor popup is non-blocking; changes persist to disk.
+
+---
+
+### H. Chat modes & actions
+
+1. **Script Chat** (scoped to selected script/entity):
+   Buttons: **Ask (Plan)**, **Propose Diff**, **Open in VS**, **Apply Staged Diff**, **Rollback/Load Version**, **Edit Agent.md**, **Log Note**.
+
+2. **Global Chat** (repo-level reasoning):
+   Buttons: **Ask (Plan)**, **Generate Task Stubs**, **Open VS Mode**, **Export Plan → Extended Merged Corrections**.
+
+3. **Free Chat** (unscoped; no auto-apply).
+
+**Acceptance**
+
+* Actions above create corresponding logs and do not bypass governance or append-only rules.
+
+---
+
+### I. VS Bridge mode (editor_bridge="vscode")
+
+* **Open in VS**: `code -g "<path>:<line>"`.
+* **Diffs**: use VS Code diff UI (via extension or CLI shim).
+* **Apply remains local** in our tool; Copilot/Agent (if present) may be used for **reasoning only** when explicitly invoked; never granted apply authority.
+* All bridge actions are logged (session + progress/changelog as appropriate).
+
+**Acceptance**
+
+* Toggling VS Mode routes open/diff to VS Code; apply path remains local and logged.
+
+---
+
+### J. Completion rule (hard gate)
+
+You may mark a requirement **✅ complete** only when:
+
+* Code exists in the repo,
+* It is reachable in runtime (UI path / callable path),
+* Acceptance (and impl-check if applicable) is updated and green,
+* Evidence is linked in the Spec Verification Block.
+
+**Acceptance**
+
+* Attempting to mark ✅ without evidence fails the final gate (impl_check).
+
+---
+
+### K. Example artifacts (for immediate bootstrapping)
+
+**Task stub (JSONL line)**
+
+```json
+{"timestamp":"2025-10-30T00:00:00Z","area":"Script Builder UI","need":"Create modeless Script Builder with category templates; write v0001 + Agent.md; register in index","why":"Required-Updates.md: G","status":"todo","blocked_on":"","urgency":"high","modes":{"ask":true,"do_work":true}}
+```
+
+**Progress line**
+
+```
+✅ 2025-10-30T00:42Z Script Builder initial pass — Required-Updates:G
+```
+
+**CHANGELOG entry (excerpt)**
+
+```
+2025-10-30 00:42Z
+- Added modeless Script Builder window (inputs: name, category, role).
+- On create: scaffold AssetsMirror/Scripts/<Name>/, write v0001, copy <Category>.Agent.md.
+- Updated index and sidebar to load script editor/chat buckets on selection.
+- Why: Required-Updates:G (Per-script agents & templates).
+```
+
+---
+
+### L. High-contrast & accessibility enforcement
+
+* All UI/layout code must include an inline comment noting:
+  **“High-contrast rule: light text on dark, never low-contrast; verified.”**
+* Buttons, popups, editors, and chat panes must maintain legible sizes and focus outlines.
+
+**Acceptance**
+
+* Visual inspection shows compliant colors; source contains the inline comment near every UI widget creation.
+
+
+------
+
+
 Next steps that are missing or need to be clarified from your last few messages:
 
 1. Agent Styles: fast switching and StyleIndex
