@@ -1,3 +1,10 @@
+# Micro Agent Local — Operating Policy
+Before any planning or edits, reread this file and Required-Updates.md.
+Ensure every directory and script has a matching README_<name>.md.
+If any are missing, generate them using the templates from the root README and append new paths to the Repository Index.
+Keep logs append-only, keep UI high-contrast, and never edit without documentation.
+
+
 # Agent Operating Procedures — Agent.md
 
 *(Codex Planner / Executor Runtime Policy — local-first, VS-bridge aware, append-only, high-contrast)*

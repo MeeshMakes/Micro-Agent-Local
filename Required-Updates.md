@@ -1,3 +1,9 @@
+# Micro Agent Local — Spec Driver
+This file defines what must exist for full autonomy.
+The agent must continually read it, create any missing README_<name>.md files for folders and scripts, and record completion evidence in changelogs and progress logs.
+A session is valid only when the repo contains a README for every active directory and script.
+
+
 # Required-Updates — Operating Contract for Codex / Local Agent
 
 **Purpose.** This file is the **single source of truth** for planned changes. Codex or the Local Agent must continuously read it, extract unshipped work, propose diffs/commands, and (with approval) apply and verify those changes. This document governs the full loop: **Plan → Stage → Approve → Apply → Verify → Report**.

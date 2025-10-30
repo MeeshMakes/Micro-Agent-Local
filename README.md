@@ -1,3 +1,10 @@
+# Micro Agent Local is a self-updating, repo-aware automation framework.
+Its purpose is to make the system loop, learn, and document itself—like VS Code + Copilot Agent but fully local.
+Every folder and primary script must have its own explainer file (README_<name>.md) describing what it does.
+Missing READMEs must be generated automatically, linked back into this root index, and kept current as the code evolves.
+
+
+
 # Micro-Agent — Living README (Canonical “Now” for the Entire System)
 
 > This document is **live state**: it must always reflect what **exists and works right now**—architecture, UI, files, authority policy, styles, datasets, macros, and agent inventory.  
