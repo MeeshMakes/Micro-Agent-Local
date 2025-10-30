@@ -1628,25 +1628,30 @@ class ChatPanel(QtWidgets.QWidget):
         self.edit_mode_active = False  # True = editing pending cmd text
         self._cached_normal_style = ""
 
-        # ask / do work row
+        # Ask / Do Work mode toggles (live near the message box per spec)
         self.ask_btn = QtWidgets.QPushButton("Ask")
         self.ask_btn.setToolTip("Ask = talk / think / research only. No actions.")
+        self.ask_btn.setCheckable(True)
+        self.ask_btn.setChecked(True)
         self.ask_btn.setStyleSheet(
             f"QPushButton {{ background-color:{BG_PANEL}; color:{FG_TEXT}; "
             f"border:1px solid {BORDER_COLOR}; padding:4px 8px; font-weight:bold; }}"
+            f"QPushButton:checked {{ background-color:{ACCENT_FOCUS}; color:{BG_PANEL}; }}"
         )
 
         self.dowork_btn = QtWidgets.QPushButton("Do Work")
         self.dowork_btn.setToolTip("Do Work = agent can plan tasks, propose changes, prepare commands.")
+        self.dowork_btn.setCheckable(True)
         self.dowork_btn.setStyleSheet(
-            f"QPushButton {{ background-color:{ACCENT_FOCUS}; color:{BG_PANEL}; "
+            f"QPushButton {{ background-color:{BG_PANEL}; color:{FG_TEXT}; "
             f"border:1px solid {BORDER_COLOR}; padding:4px 8px; font-weight:bold; }}"
+            f"QPushButton:checked {{ background-color:{ACCENT_WARN}; color:{BG_PANEL}; }}"
         )
 
-        ask_work_row = QtWidgets.QHBoxLayout()
-        ask_work_row.addWidget(self.ask_btn)
-        ask_work_row.addWidget(self.dowork_btn)
-        ask_work_row.addStretch(1)
+        self.mode_group = QtWidgets.QButtonGroup(self)
+        self.mode_group.setExclusive(True)
+        self.mode_group.addButton(self.ask_btn)
+        self.mode_group.addButton(self.dowork_btn)
 
         # brain dropdown
         self.brain_mode_combo = QtWidgets.QComboBox()
@@ -1659,15 +1664,6 @@ class ChatPanel(QtWidgets.QWidget):
             f"border:1px solid {BORDER_COLOR}; padding:2px 4px; }}"
         )
 
-        brain_row = QtWidgets.QHBoxLayout()
-        brain_label = QtWidgets.QLabel("Brain:")
-        brain_label.setStyleSheet(
-            f"QLabel {{ color:{FG_TEXT}; background-color:{BG_PANEL}; }}"
-        )
-        brain_row.addWidget(brain_label)
-        brain_row.addWidget(self.brain_mode_combo, 1)
-        brain_row.addStretch(1)
-
         # transcript
         self.transcript = TranscriptPanel()
 
@@ -1676,12 +1672,6 @@ class ChatPanel(QtWidgets.QWidget):
         self.task_feed.requestStart.connect(self.taskRequestStart.emit)
         self.task_feed.requestSkip.connect(self.taskRequestSkip.emit)
         self.task_feed.requestView.connect(self.taskRequestView.emit)
-
-        # combine transcript + task feed horizontally
-        upper_split = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
-        upper_split.addWidget(self.transcript)
-        upper_split.addWidget(self.task_feed)
-        upper_split.setSizes([400, 260])
 
         # staged changes panel
         self.staged_changes_panel = staged_changes_panel
@@ -1711,6 +1701,14 @@ class ChatPanel(QtWidgets.QWidget):
 
         # store normal style so we can flip to edit style and back
         self._cached_normal_style = self.chat_input.styleSheet()
+
+        self.send_btn = QtWidgets.QPushButton("Send")
+        self.send_btn.setToolTip("Send the message using the selected Ask/Do Work mode.")
+        self.send_btn.setStyleSheet(
+            f"QPushButton {{ background-color:{ACCENT_OK}; color:{BG_PANEL}; "
+            f"border:1px solid {BORDER_COLOR}; padding:6px 14px; font-weight:bold; }}"
+            f"QPushButton:pressed {{ background-color:{ACCENT_FOCUS}; color:{BG_WINDOW}; }}"
+        )
 
         # attach image button
         self.attach_btn = QtWidgets.QPushButton("Attach Image")
@@ -1769,8 +1767,7 @@ class ChatPanel(QtWidgets.QWidget):
         )
 
         # connect chat action buttons
-        self.ask_btn.clicked.connect(lambda: self._emit_send(is_do_work=False))
-        self.dowork_btn.clicked.connect(lambda: self._emit_send(is_do_work=True))
+        self.send_btn.clicked.connect(self._send_current_mode)
         self.plan_btn.clicked.connect(lambda: self._emit_plan())
         self.rem_btn.clicked.connect(lambda: self._emit_remember())
         self.exp_btn.clicked.connect(lambda: self._emit_expand())
@@ -1779,38 +1776,70 @@ class ChatPanel(QtWidgets.QWidget):
         self.stage_patch_btn.clicked.connect(self.requestStagePatch.emit)
         self.apply_patch_btn.clicked.connect(self.requestApplyPatch.emit)
 
-        # layout
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(4,4,4,4)
+        # layout containers per vertical chat block requirement
+        left_widget = QtWidgets.QWidget()
+        left_layout = QtWidgets.QVBoxLayout(left_widget)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+        left_layout.setSpacing(6)
+        left_layout.addWidget(self.transcript, 5)
+        left_layout.addWidget(self.chat_input, 2)
+        left_layout.addWidget(self.pending_bar)
 
-        layout.addLayout(ask_work_row)
-        layout.addLayout(brain_row)
-        layout.addWidget(upper_split, 3)
-        layout.addWidget(self.staged_changes_panel, 2)
-        layout.addWidget(self.pending_bar)
-        layout.addWidget(QtWidgets.QLabel("Message / Images:"))
-        layout.addWidget(self.chat_input, 1)
+        brain_row = QtWidgets.QHBoxLayout()
+        brain_label = QtWidgets.QLabel("Brain:")
+        brain_label.setStyleSheet(
+            f"QLabel {{ color:{FG_TEXT}; background-color:{BG_PANEL}; }}"
+        )
+        brain_row.addWidget(brain_label)
+        brain_row.addWidget(self.brain_mode_combo, 1)
+        brain_row.addStretch(1)
+        left_layout.addLayout(brain_row)
 
-        # attach row + second row of buttons
-        attach_row = QtWidgets.QHBoxLayout()
-        attach_row.addWidget(self.attach_btn)
-        attach_row.addStretch(1)
+        mode_row = QtWidgets.QHBoxLayout()
+        mode_label = QtWidgets.QLabel("Send as:")
+        mode_label.setStyleSheet(
+            f"QLabel {{ color:{FG_TEXT}; background-color:{BG_PANEL}; font-weight:bold; }}"
+        )
+        mode_row.addWidget(mode_label)
+        mode_row.addWidget(self.ask_btn)
+        mode_row.addWidget(self.dowork_btn)
+        mode_row.addStretch(1)
+        left_layout.addLayout(mode_row)
 
-        layout.addLayout(attach_row)
+        control_row = QtWidgets.QHBoxLayout()
+        control_row.addWidget(self.attach_btn)
+        control_row.addWidget(self.send_btn)
+        control_row.addStretch(1)
+        left_layout.addLayout(control_row)
 
         button_row_top = QtWidgets.QHBoxLayout()
         button_row_top.addWidget(self.plan_btn)
         button_row_top.addWidget(self.rem_btn)
         button_row_top.addWidget(self.exp_btn)
         button_row_top.addStretch(1)
+        left_layout.addLayout(button_row_top)
 
         button_row_bottom = QtWidgets.QHBoxLayout()
         button_row_bottom.addWidget(self.stage_patch_btn)
         button_row_bottom.addWidget(self.apply_patch_btn)
         button_row_bottom.addStretch(1)
+        left_layout.addLayout(button_row_bottom)
 
-        layout.addLayout(button_row_top)
-        layout.addLayout(button_row_bottom)
+        right_widget = QtWidgets.QWidget()
+        right_layout = QtWidgets.QVBoxLayout(right_widget)
+        right_layout.setContentsMargins(0, 0, 0, 0)
+        right_layout.setSpacing(6)
+        right_layout.addWidget(self.task_feed, 2)
+        right_layout.addWidget(self.staged_changes_panel, 3)
+
+        main_split = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
+        main_split.addWidget(left_widget)
+        main_split.addWidget(right_widget)
+        main_split.setSizes([620, 320])
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(4, 4, 4, 4)
+        layout.addWidget(main_split)
 
         # make labels high contrast
         for lab in self.findChildren(QtWidgets.QLabel):
@@ -1840,6 +1869,10 @@ class ChatPanel(QtWidgets.QWidget):
             add_text = "\n".join([str(p) for p in self.attached_images])
             cur = self.chat_input.toPlainText()
             self.chat_input.setPlainText(cur + ("\n" if cur else "") + add_text)
+
+    def _send_current_mode(self):
+        """Send using the currently selected Ask/Do Work toggle."""
+        self._emit_send(is_do_work=self.dowork_btn.isChecked())
 
     def _emit_send(self, is_do_work: bool):
         """
@@ -1955,6 +1988,7 @@ class ChatPanel(QtWidgets.QWidget):
             if event.type() == QtCore.QEvent.KeyPress:
                 if event.key() == QtCore.Qt.Key_Return and (event.modifiers() & QtCore.Qt.ControlModifier):
                     # Ctrl+Enter = Do Work by default
+                    self.dowork_btn.setChecked(True)
                     self._emit_send(is_do_work=True)
                     return True
         return super().eventFilter(obj, event)

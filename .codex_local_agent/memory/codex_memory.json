@@ -1,0 +1,8 @@
+{
+  "last_update": "2025-10-30T14:08:16.021758+00:00",
+  "chat_layout": {
+    "left_column": "transcript and input stack vertically",
+    "send_controls": "ask/do work toggles with send button under the message box",
+    "review_column": "task feed over staged changes on the right"
+  }
+}

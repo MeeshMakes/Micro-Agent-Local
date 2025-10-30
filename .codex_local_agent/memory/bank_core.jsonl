@@ -1,1 +1,2 @@
 {"timestamp":"2025-10-30T11:53:27Z","rule":"Maintain canonical control directories (.codex_local_agent/memory, acceptance, diffqa, impl_check, chat/sessions, logs) with append-only files as defined in Required-Updates.md section Global Agent Operations A."}
+{"timestamp": "2025-10-30T14:08:08.448706+00:00", "rule": "Chat workspace must keep transcript and input stacked on the left with Ask/Do Work toggles plus Send button adjacent to the message box; review panels live in the right column."}
