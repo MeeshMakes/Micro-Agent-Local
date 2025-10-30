@@ -1,0 +1,4 @@
+overrides:
+  preferences:
+    require_stepwise_math: true
+    avoid_codegen_for_math: true

@@ -1,0 +1,10 @@
+{
+  "surface": "#0f111a",
+  "text": "#f8f8f2",
+  "muted": "#a0a4ad",
+  "accent": "#5aa7ff",
+  "warning": "#ffb86c",
+  "danger": "#ff5555",
+  "success": "#50fa7b",
+  "note": "High contrast enforced. Never low-contrast text/background pairings."
+}

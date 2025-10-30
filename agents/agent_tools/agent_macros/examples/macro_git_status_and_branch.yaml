@@ -1,0 +1,9 @@
+# macro_git_status_and_branch.yaml
+macro_id: git.status-and-branch.v1
+title: "Show git status and current branch"
+shell: bash
+authority: always_allow
+risk: low
+steps:
+  - "git status"
+  - "git rev-parse --abbrev-ref HEAD"

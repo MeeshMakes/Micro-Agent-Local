@@ -1,0 +1,15 @@
+{
+  "open_in_editor": [
+    "code \"{path}\"",
+    "nano \"{path}\""
+  ],
+  "make_dir": [
+    "mkdir -p \"{path}\""
+  ],
+  "copy_glob": [
+    "cp -f \"{src}\" \"{dst}\""
+  ],
+  "list_dir": [
+    "ls -la \"{path}\""
+  ]
+}

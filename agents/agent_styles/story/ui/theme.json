@@ -1,0 +1,9 @@
+{
+  "surface": "#0e0f12",
+  "text": "#ffffff",
+  "muted": "#b0b3b8",
+  "accent": "#9abfff",
+  "warning": "#ffd27f",
+  "success": "#7cf1a0",
+  "note": "Always high contrast; book-like spacing."
+}

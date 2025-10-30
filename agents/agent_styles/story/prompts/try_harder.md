@@ -1,0 +1,1 @@
+# Try Harder (story) — stronger hook, rhythm, and clarity, preserve facts.

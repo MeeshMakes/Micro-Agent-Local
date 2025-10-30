@@ -1,0 +1,3 @@
+- [ ] Outline exists
+- [ ] Readable line length
+- [ ] No low-contrast text

@@ -1,0 +1,1 @@
+# Try Harder (math) — alternative formulations, dimensional checks, and edge cases.

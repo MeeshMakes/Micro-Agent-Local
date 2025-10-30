@@ -1,0 +1,20 @@
+# macro_code_inline_edit.yaml
+macro_id: code.inline-edit.v1
+title: "Inline edit (find/replace) within a file with guardrails"
+shell: powershell
+authority: ask_first
+risk: medium
+requires:
+  - target_file
+params:
+  target_file: ""
+  find: ""
+  replace: ""
+preflight:
+  - "Test-Path \"{target_file}\""
+steps:
+  - "python scripts/apply_text_patch.py --file \"{target_file}\" --find \"{find}\" --replace \"{replace}\" --guard"
+success:
+  - "python -c \"import sys, pathlib; p=pathlib.Path(r'{target_file}'); print('OK' if p.exists() else 'MISSING');\""
+rollback:
+  - "# non-destructive: create .bak in apply_text_patch; manual restore if needed"

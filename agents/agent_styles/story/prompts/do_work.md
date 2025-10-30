@@ -1,0 +1,1 @@
+# Do Work (story) — draft → revise → finalize; suggest images if helpful.

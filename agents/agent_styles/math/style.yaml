@@ -1,0 +1,16 @@
+name: math
+version: 1
+tags: [math, reasoning, derivation, units]
+plan:
+  depth: high
+  require_pending_command: false
+tools:
+  prefer_macros: true
+  allow_shell: ask_first
+  calculators: ["internal"]
+memory:
+  rag_bias: [formulas, datasets, prior_solutions]
+ui:
+  theme_file: ui/theme.json
+  think_style: { color: "#6b8f72", italic: true, size: "smaller" }
+  answer_style: { color: "#f8f8f2", size: "larger" }

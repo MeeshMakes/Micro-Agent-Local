@@ -1,0 +1,1 @@
+# Do Work (math) — derive step-by-step; verify with a second path if possible.

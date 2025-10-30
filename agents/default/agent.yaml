@@ -1,0 +1,133 @@
+# Default Agent configuration — `agent.yaml`
+# Purpose: machine‑readable knobs for paths, authority, pipelines, tools, guards, and retention.
+
+name: "default"                    # This folder’s agent name. Clone to agents/agent_roster/<name>/ and change.
+version: "1.0.0"
+description: >
+  Bedrock fallback agent. Always available. Reads Required‑Updates.md, keeps README.md truthful,
+  updates Implemented/Missing/Quarantined indexes, and executes work only through a visible Pending Command gate.
+
+identity:
+  role: "Micro‑Agent‑Local / Repository Agent"
+  persona_style: "neutral-practical"
+  allow_style_overrides: true        # If a style is selected, its hints may tune tone or planning bias.
+
+paths:
+  repo_root: "${ACTIVE_REPO_ROOT}"   # Set by the app when a file/folder is loaded.
+  datasets_root: "datasets/default"
+  chat_history_md: "chat_history.md"
+  implemented_updates: "Implemented-Updates.md"
+  implemented_devlogic: "Implemented-DevLogic.md"
+  missing_updates: "Missing-Updates.md"
+  quarantined_updates: "Quarantined-Updates.md"
+  required_updates: "Required-Updates.md"
+  archived_agents: "Archived_Agents"
+  macros_bin: "system_tools/system_macros/bin"
+  macros_index: "system_tools/system_macros/index.json"
+  allowlist_store: "agents/allowlists/default_allow.json"
+  independent_allowlist_store: "agents/allowlists/default_independent_allow.json"
+  styles_root: "agents/agent_styles"
+  roster_root: "agents/agent_roster"
+  dev_logic: "Dev_Logic"
+
+authority:
+  mode: "ask-first"                  # ask-first | full-auto | read-only
+  safe_write_outside_repo: false
+  always_allow_enabled: false
+  independent_agent_mode: false      # If true, use independent_allowlist_store.
+  require_explicit_first_allow: true # First time a new action appears, force a manual Allow to whitelist.
+  deny_globs:                        # Guard rails; require explicit override to touch these.
+    - "**/.git/**"
+    - "**/node_modules/**"
+    - "**/.venv/**"
+    - "**/*.exe"
+    - "**/*.dll"
+  allow_globs:                       # Fast‑path safe edits
+    - "**/*.md"
+    - "**/*.py"
+    - "**/*.json"
+    - "**/*.yaml"
+    - "**/*.yml"
+
+macros:
+  retention_hours: 24
+  keep_last_session_if_idle_over_hours: 24
+  hash_duplicates: true
+  filename_pattern: "{verb}-{target}-{context}.{ext}"
+
+ocr:
+  enabled: true
+  strategy: "dual-pass"              # fast_markdown_first, then secondary for accuracy
+  store_ocr_in_dataset: true
+
+dataset:
+  enabled: true
+  save_per_turn: true
+  fields:
+    - chat_markdown
+    - image_paths
+    - ocr_text
+    - tags
+    - hashes
+  rag:
+    indexing: ["tags", "hashes", "semantic"]
+    max_results: 8
+
+pending_command_ui:
+  flashing_interval_secs: 2
+  buttons: ["Allow", "Skip", "Try Harder", "Edit"]
+  edit_mode_outline: "magenta"
+  approval_button_color: "blue"
+
+tools:
+  terminals:
+    - "powershell"
+    - "cmd"
+    - "wsl"
+    - "bash"
+  ops:
+    - "fs.read"
+    - "fs.write"
+    - "fs.mkdirp"
+    - "fs.move"
+    - "fs.copy"
+    - "diff.preview"
+    - "git.status"
+    - "git.apply_patch"
+    - "git.commit"
+    - "git.revert"
+  ocr:
+    fast_markdown_model: "local-fast-markdown-ocr"
+    secondary_model: "local-ocr-secondary"
+  render:
+    markdown: true
+    thumbnails: true
+
+pipelines:
+  ask_pipeline:
+    - "load_conversation_context"
+    - "retrieve_rag_context"
+    - "analyze_required_updates_headers_only"   # summarize but DO NOT plan/execute
+    - "respond_in_markdown_with_think_blocks"
+  do_work_pipeline:
+    - "load_conversation_context"
+    - "read_required_updates_in_full"
+    - "derive_plan_and_todos"
+    - "prepare_pending_command_with_diffs"
+    - "await_approval"
+    - "execute_with_safety_and_backups"
+    - "update_indexes_and_readme"
+    - "capture_macros_and_checkpoint"
+
+logging:
+  level: "info"
+  file: "logs/agent_default.log"
+  rotate_mb: 10
+  backups: 3
+
+self_review:
+  enable_after_uses: 10
+  write_to: "Implemented-DevLogic.md"
+  fields: ["what_worked", "what_failed", "rationale", "next_tweaks"]
+
+# End of agent.yaml

@@ -1,0 +1,42 @@
+name: DefaultAgent
+version: 0.2.0
+chain_order:
+  - agents/base.md
+  - agents/local.md
+  - agents/project.md
+
+modes:
+  ask:        { prompt_file: agents/default/prompts/ask.md }
+  do_work:    { prompt_file: agents/default/prompts/do_work.md }
+  try_harder: { prompt_file: agents/default/prompts/try_harder.md }
+
+sources:
+  required_updates: Required-Updates.md
+  implemented_updates: Implemented-Updates.md
+  quarantined_updates: Quarantined-Updates.md
+  missing_updates: Missing-Updates.md
+  chat_history: chat_history.md
+  rant_feed: rant_feed.md
+  dev_logic_dir: Dev_Logic/
+
+authority:
+  ledger_path: agents/authority/ledger.json
+  independent_agent_mode: false
+  approvals:
+    allow_default: false
+    remember_always_allow: true
+
+macros:
+  enabled: true
+  store_path: tools/macros/store.jsonl
+  ttl_hours: 24
+  bean_keep_if_no_usage_day: true
+
+styles_index: agents/styles/index.json
+active_styles: [coding]
+
+runtime:
+  loop_entry: agents/default/runtime/loop.py
+  poll_interval_seconds: 2
+  max_parallel_tasks: 2
+  log_dir: logs/

@@ -1,0 +1,5 @@
+overrides:
+  preferences:
+    tone: "vivid-but-concise"
+    cite_internal_sources: true
+    avoid_editing_files: true

@@ -1,0 +1,18 @@
+name: coding
+version: 1
+tags: [code, python, tests, git, diff]
+plan:
+  depth: medium
+  require_pending_command: true
+  auto_retry_on_error: 1
+tools:
+  prefer_macros: true
+  allow_shell: ask_first   # gated by Pending Command + authority
+  code_edit_mode: diff_first
+  run_tests: true
+memory:
+  rag_bias: [python, pytest, ui, renderer, git]
+ui:
+  theme_file: ui/theme.json
+  think_style: { color: "#6b8f72", italic: true, size: "smaller" }
+  answer_style: { color: "#f8f8f2", size: "larger" }

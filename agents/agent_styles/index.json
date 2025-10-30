@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "styles": [
+    {
+      "name": "coding",
+      "description": "Developer-first behavior: diff-first edits, tests, high-contrast UI, rigorous Pending Command gating.",
+      "ui_rules": {
+        "contrast": "high",
+        "note": "Never low-contrast text on background."
+      }
+    },
+    {
+      "name": "story",
+      "description": "Narrative and long-form composition; outline-first, tone controls, citation hygiene, high-contrast reading pane.",
+      "ui_rules": {
+        "contrast": "high",
+        "note": "Readable, book-like layout; no low-contrast."
+      }
+    },
+    {
+      "name": "math",
+      "description": "Structured problem solving; step-by-step derivations, unit checks, and verification; monospace math blocks.",
+      "ui_rules": {
+        "contrast": "high",
+        "note": "Clear math formatting; never low-contrast."
+      }
+    }
+  ]
+}

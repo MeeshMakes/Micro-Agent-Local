@@ -1,0 +1,13 @@
+# macro.schema.yaml
+macro_id: example.id.v1
+title: "Human-friendly title"
+shell: powershell   # powershell | bash | cmd
+authority: ask_first  # ask_first | always_allow | blocked
+risk: low            # low | medium | high
+requires: []         # runtime inputs
+params: {}
+preflight: []
+steps: []
+success: []
+rollback: []
+notes: ""

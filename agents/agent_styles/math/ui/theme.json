@@ -1,0 +1,9 @@
+{
+  "surface": "#0f0f14",
+  "text": "#f8f8f2",
+  "muted": "#9aa0a6",
+  "accent": "#7aa2ff",
+  "warning": "#ffca7a",
+  "success": "#6df2a8",
+  "note": "High contrast; clear monospace for math blocks."
+}

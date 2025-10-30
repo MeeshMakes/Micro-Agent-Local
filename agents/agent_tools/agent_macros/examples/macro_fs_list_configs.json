@@ -1,0 +1,14 @@
+{
+  "macro_id": "fs.list-configs.v1",
+  "body": "dir settings/*.json",
+  "shell": "powershell",
+  "tags": [
+    "fs",
+    "list"
+  ],
+  "risk": "low",
+  "created": "2025-10-30T02:34:37Z",
+  "last_used": null,
+  "beans": 0,
+  "first_seen_task_id": "T-0022"
+}

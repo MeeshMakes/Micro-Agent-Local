@@ -1,0 +1,19 @@
+{
+  "styles": [
+    {
+      "name": "coding",
+      "description": "Repo-aware codegen; macro-heavy",
+      "agent_yaml": "agents/styles/coding/agent.yaml"
+    },
+    {
+      "name": "math",
+      "description": "Stepwise math; calc-first",
+      "agent_yaml": "agents/styles/math/agent.yaml"
+    },
+    {
+      "name": "story",
+      "description": "Narrative; defer file edits",
+      "agent_yaml": "agents/styles/story/agent.yaml"
+    }
+  ]
+}

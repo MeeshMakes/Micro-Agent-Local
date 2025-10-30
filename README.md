@@ -1,4 +1,298 @@
-This is the proposed `README.md` for the system. Content is based on the current design and implementation in `micro_agent.py`. 
+# Micro-Agent — Living README (Canonical “Now” for the Entire System)
+
+> This document is **live state**: it must always reflect what **exists and works right now**—architecture, UI, files, authority policy, styles, datasets, macros, and agent inventory.  
+> The Agent (Local Agent or cloud Codex) must treat this README as the single source of truth for **the current reality** of the repo.  
+> The backlog/intent and the delivery ledger live alongside it; together they form the **Trifecta** that keeps the project coherent and auditable.
+
+---
+
+## The Trifecta (plan ↔ now ↔ shipped)
+
+```
+
+[ Required-Updates.md ]     → plan of record (backlog / intent / constraints)
+[ README.md ]               → current system (this file; must mirror reality precisely)
+[ Implemented-Updates.md ]  → shipped ledger (what landed; task ids; diffs/commits)
+
+```
+
+- If an item is **desired** → it belongs in **Required**.  
+- If an item is **built** → it must be reflected **here in README** and recorded in **Implemented**.  
+- If an item is **blocked/denied/errored** → move it to **Quarantined-Updates.md** with a clear retry plan.  
+- After any “Do Work” run, anything that didn’t land is enumerated in **Missing-Updates.md** (auto), so nothing silently drops.
+
+> **Invariant:** the README is the **“now” contract**. The Agent must keep it current or leave explicit “Documentation TODO” stubs *in this file* (template below).
+
+---
+
+## How the Agent must use this README (non-optional loop)
+
+1. **Every run (Ask or Do Work)**  
+   - Re-read this README **top-to-bottom**.  
+   - Treat it as **ground truth** for: architecture, UI affordances, authority model, current styles, datasets, macro policy, agent inventory.  
+   - Perform **drift detection**:  
+     - Anything described here that doesn’t exist in code/config → open/fix tasks.  
+     - Anything in code/config not captured here → update this README (or add a visible TODO block).
+
+2. **When implementing anything from Required**  
+   - Follow: **Plan → Stage → Approve → Apply → Verify → Record**.  
+   - After *verify*:  
+     - Update **this README** (sections listed below).  
+     - Append an entry to **Implemented-Updates.md**: task ids, affected paths, concise rationale, links to diffs/commits.  
+     - If partially landed, keep the remainder in **Required** and add a visible **TODO** block *here*.
+
+3. **If docs trail the code**  
+   - Insert a **Documentation TODO** block (below) in this README and open a matching task in **Required**.  
+   - Never “skip and forget” README updates; make drift visible.
+
+4. **If README vs code disagree**  
+   - Prefer **runtime** (code) as factual, then immediately:  
+     - Fix this README to match reality **or** file a Required task to align code to the described intent.  
+   - Record the reconciliation in **Implemented**.
+
+---
+
+## Execution Modes, Authority & UI Signals
+
+- **Ask** → reason/research/narrate only. **No writes, no shell, no side-effects.**  
+- **Do Work** → propose tasks, stage diffs/commands, request approvals, execute approved steps, then update README + ledgers.
+- **Context carry-over**: Ask analysis must feed directly into Do Work planning.
+
+**Authority Model (Agent Manager):**
+- Profiles: **Ask-First**, **Read-Only**, **Full Auto**, **Independent Agent Mode** (isolated approvals/allow-lists per agent).  
+- **Allow / Skip / Try Harder / Edit** flow:
+  - Pending command requires approval → **Allow** flashes blue (every ~2s).  
+  - **Edit** toggles magenta outline (high-contrast) and lets user revise the pending text before approval.  
+  - **Always Allow** persists future approvals for identical actions; first-time actions still prompt and get logged to the allow-list.
+
+**High-Contrast UI (non-negotiable):**
+- Never low-contrast pairings. Use **light on dark** or **dark on light** only.  
+- Critical affordances: flashing blue **Allow** when needed; magenta **Edit-mode** outline for clarity; state badges readable at a glance.
+
+---
+
+## Core Layout & Current Components (live snapshot)
+
+> This section must always mirror what actually exists, not aspirations. The Agent updates it whenever new capability lands.
+
+- **Mini-App Dock**: Script Creator, Agent Manager, Macros Manager (future: Tools Manager).  
+- **Chat Surface**: message input + response pane (vertical), buttons co-located at chat level (**Send / Ask / Do Work / Try Harder / Edit / Allow / Skip**).  
+- **Pending Command bar**: appears above chat; shows staged operation, auth state, and the flashing **Allow** when action is required.  
+- **Left Slide-Out**: vertical scroller host for Managers (Agent Manager, Extension/Tools Manager, Styles Manager, etc.). Arrow affordance nudges content and auto-slides; panes are movable/dockable; thin grey wireframe + corner handles for resizing.  
+- **Staged Changes**: right column under Task Feed; shows file/diff staging with explicit approvals.  
+- **Rant Window (top, faint brown-orange)**: speech-to-text stream → converts longform intent into structured entries in **Required-Updates.md** (see ingestion rules below).
+
+> UI geometry follows the **High-Contrast rule** and all panes are movable/dockable; text never overlays similar values.
+
+---
+
+## Files & Folders the Agent must maintain (and auto-seed if missing)
+
+> Current repo uses this README as the only README. As structure is implemented, the Agent will generate per-folder `README_<scope>.md` files using the naming rules below.
+
+```
+
+/Required-Updates.md              # backlog/intent; also receives “Rant” ingestions (structured)
+/Implemented-Updates.md           # shipped ledger; links to diffs; task ids
+/Quarantined-Updates.md           # blocked/denied w/ reason + retry plan
+/Missing-Updates.md               # what didn’t land after a run (auto)
+
+/agents/                          # agents home (default, styles, roster)
+/default/
+agent.yaml                    # machine config (model/provider/endpoints/limits/authority/style)
+Agent.md                      # human-readable system card (loop, safety, datasets, macros, styles)
+README_default.md             # local contract for default agent (auto once generated)
+/agent_tools/
+/agent_macros/              # per-agent macro registry (templates, compiled packs, logs)
+/agent_styles/                  # swappable styles (index + folders; auto as implemented)
+index.json
+README_Styles.md
+/agent_roster/                  # cloned, named agents derived from default/style templates (auto)
+<agent_name>/
+agent.yaml
+Agent.md
+README_<agent_name>.md
+
+/system_tools/                    # repo-wide tools (non-agent-specific)
+/system_tools/system_macros/      # global macro packs (may be imported/compiled into agents)
+
+/datasets/
+/chat_history/                  # markdown turns, images, OCR_fast/full, tags & hashes
+memory.jsonl                    # consolidated memory rollups (if used)
+/indices/                       # semantic indices, allow-lists, style indices
+
+/.logs/                           # session logs, approvals, errors (human-readable)
+
+````
+
+> **Auto-seeding:** if any of the above are missing, the Agent creates sensible defaults and appends the action to **Implemented-Updates.md**.
+
+---
+
+## Styles & Style Packs (agent_styles)
+
+- **Purpose**: change *how* the agent reasons/communicates without breaking the default backbone.  
+- **Index**: `agents/agent_styles/index.json` (category, description, guardrails, preferred tasks).  
+- **Behavior**: the Agent can switch styles autonomously (fast) based on task semantics; fall back to **default** if style is missing/ambiguous.  
+- **Evolution**: styles can be grown over time; descriptions must state differences from default; each style folder will include `README_<style>.md`.
+
+> Rationale for separation: **default** must always work and remain clean. Styles are **additive** overlays tuned for domains (e.g., story, math, code, UI/UX).
+
+---
+
+## Macros (agent_macros + system_macros), Lexicons & GC
+
+- **Macros** are small helper scripts/snippets that the Agent composes to act quickly (navigate FS, open/patch files, apply diffs, run tests, retry with backoff).  
+- **Lexicons** enumerate terminal idioms across environments (PowerShell, CMD, bash/WSL/Linux, etc.) so macro generation is precise per shell.  
+- **Where**:
+  - **Per-agent**: `agents/default/agent_tools/agent_macros/` (templates, compiled macro packs, usage logs).  
+  - **Global**: `/system_tools/system_macros/` (can be imported and localized per agent).
+- **Bean counter / GC**: unused macros decay after ~24h (usage “beans”); GC does not run if the *entire* session window is idle (to avoid wiping last-used macros).
+- **Quarantine / Blocked**: macros with auth collisions or failures are moved to quarantine with a reason; retry logic is recorded; blocked macros are clearly surfaced and can request re-auth.
+
+> The Macros Manager must expose: registry, quarantine, blocked, compiled packs, usage counters, and lexicon links per terminal.
+
+---
+
+## “Rant → Required” Ingestion (speech-to-text intent → structured tasks)
+
+- **Rant Window** continuously streams voice → text into a preprocessing step that:
+  - Buckets content, adds semantic tags/hashes, and suggests merges with related Required entries.  
+  - Expands existing Required items with new detail **or** creates new ones if distinct.  
+  - Preserves raw voice text in datasets and writes clarified task text to **Required-Updates.md**.
+- **Buttons** near Rant:
+  - **Generate Required** (first pass), **Revise Required** (merge/simplify, never silently delete), **Implement Required** (start autonomous harvest loop).
+- **Harvest loop** uses dedicated micro-agent directives to walk Required from top→bottom while cross-linking references across the file; it can partial-land items and open TODOs here.
+
+---
+
+## Default Agent Hygiene (the backbone must stay sharp)
+
+**Path:** `agents/default/` — stable fallback; **must always work**.
+
+- Evolve `Agent.md` by *appending/refining*; do not nuke history.  
+- Adjust `agent.yaml` when you have a documented upgrade (model/provider/limits/authority/style).  
+- Snapshot to `Archived_Agents/` with short changelog at rolling intervals (2d / 1d / 6h / 1h) and prune as stability holds.  
+- To create a new **named agent**:
+  1. Clone `agents/default/` to `agents/agent_roster/<agent_name>/`.  
+  2. Rename README inside to `README_<agent_name>.md`.  
+  3. Tailor `Agent.md` & `agent.yaml`; register optional style in `agent_styles/index.json`.
+
+---
+
+## What this README must always include (sections the Agent maintains)
+
+1. **Overview & Capabilities** (what works right now)  
+2. **Architecture Map** (chat → OCR_fast/full → dataset → plan → stage → approve → apply → verify → record)  
+3. **Execution Modes & Authority** (Ask/Do Work, allow-list, Independent Agent Mode)  
+4. **Models & Providers** (from `agents/default/agent.yaml`, e.g., `ollama:qwen2.5-coder @ http://127.0.0.1:11434`)  
+5. **Datasets & RAG** (where markdown/images/OCR live, tags & hashes, indices)  
+6. **Macros** (count, latest additions, GC status, quarantine/blocked counts)  
+7. **UI & Styles** (active style pack; high-contrast proof points; dock panes)  
+8. **Mini-Apps** (Script Creator, Agent Manager, Macros Manager; future Tools Manager)  
+9. **Agent Manager** (authority profile, allow/deny lists, pending pipeline states)  
+10. **Repo/Script Linking** (how an input path sets active repo; how staged diffs appear)  
+11. **Known Limitations / TODOs** (explicit, with task ids tied to Trifecta and `Task-Index.json` if present)
+
+> Any change that touches one of these requires a same-commit README edit or a visible TODO stub.
+
+---
+
+## Documentation TODO (auto-insert template)
+
+```markdown
+> 📌 **Documentation TODO (auto)**
+> Task: T-YYYY-MM-SEQ
+> Affected: <files/paths>
+> Status: Implemented in code; README edits pending
+> Notes: <screenshots to add, style names to confirm, authority toggle text, etc.>
+````
+
+---
+
+## End-of-Run Declarations (the Agent writes these)
+
+* If everything in Required landed:
+
+```
+✅ As of <timestamp>, all Required Updates are implemented. README reflects the current system.
+```
+
+* Otherwise:
+
+  * Update **Missing-Updates.md** with undelivered items (+ task ids).
+  * Update **Quarantined-Updates.md** for blocked items (reason + remediation steps).
+  * Leave **Documentation TODO** stubs *here* where code shipped but docs lag.
+
+---
+
+## README Naming, Generation & Read Order (as structure emerges)
+
+> Today, only this root README exists. As features land, the Agent must generate **per-folder READMEs** using these rules.
+
+**Naming (machine-readable scope):**
+
+* `README_<folder_or_scope>.md` (snake-case after `README_` is the scope tag the Agent parses).
+
+  * `agents/` → `README_agents.md`
+  * `agents/default/agent_tools/` → `README_agent_tools.md`
+  * `system_tools/system_macros/` → `README_system_macros.md`
+  * `agents/agent_styles/` → `README_Styles.md`
+
+**Read order before acting:**
+
+1. Root `README.md` (this file).
+2. All ancestor READMEs down to the target folder.
+3. Target folder’s `README_<scope>.md`.
+4. If present: `Agent.md`, `agent.yaml`.
+5. Trifecta docs (Required / Implemented / Quarantined / Missing).
+
+If a needed README is missing, the Agent must **create a stub from template**, then proceed once approved.
+
+---
+
+## Practical Examples (how the Agent should behave)
+
+**Example A — Create a macro in `system_tools/system_macros`:**
+
+1. Read: root README → `README_system_tools.md` → `README_system_macros.md` (generate stubs if missing).
+2. Ask: propose plan; Do Work: stage file create + doc updates.
+3. On **Allow**: write `<macro>.py` with terminal-aware header, update README, append to **Implemented**.
+4. If shell/authority unclear: request explicit approval and persist allow-list entry.
+
+**Example B — Add a new style “researcher”:**
+
+1. Update `agents/agent_styles/index.json` with description, category, guardrails.
+2. Create folder `agents/agent_styles/researcher/` + `README_researcher.md`.
+3. Add style hooks in `Agent.md` (how behavior changes) and ensure **fallback to default** is explicit.
+4. Append to **Implemented**; add README TODO here if screenshots pending.
+
+---
+
+## Defaults & Backstops (when in doubt)
+
+* **Default Agent** must always function: switch to it if style resolution fails.
+* **Authority**: first-time risky actions always prompt; “Always Allow” is respected thereafter.
+* **GC**: macro beans only decay when there was *actual opportunity* to use them; full-day idle means **no** wipe.
+* **High-Contrast**: any new visual must assert readable text on background; add a comment note to code where the visual is defined.
+
+---
+
+> This README is the live **system contract**. Keep it accurate, or mark what remains to document—*here*. The Trifecta (Required → README/Now → Implemented) is mandatory. Nothing lands without being reflected in these three views, and nothing described here should be missing in code for long.
+
+```
+
+::contentReference[oaicite:0]{index=0}
+```
+
+
+
+
+
+
+
+_____________________
+
 
 ---
 
@@ -6,37 +300,41 @@ This is the proposed `README.md` for the system. Content is based on the current
 
 ## Overview
 
-Micro Agent Workbench is a local, high-contrast, offline-first development assistant.
+Micro Agent Workbench is a **local, high-contrast, offline-first** development assistant and IDE shell.
 
 It is a self-contained GUI that:
 
-* Hosts an agent (LLM) with memory and context.
-* Lets you talk to the agent in "Ask" mode for reasoning and research.
-* Lets you authorize the agent to actually perform work in "Do Work" mode.
-* Captures conversation, screenshots, OCR text, and file edits into a repo-scoped knowledge base.
-* Manages code editing, version snapshots, diff staging, and safe application of changes.
-* Bootstraps new projects and repos with a Script Creator tool.
-* Exposes an Agent Manager for authority level, safety gates, and memory state. 
+* Hosts an Agent (LLM) with **repo-scoped memory** and explicit authority gates.
+* Lets you converse in **Ask** mode (research/reason only) and authorize execution in **Do Work** mode (plan, stage, apply).
+* Captures **chat markdown, screenshots, dual-pass OCR, diffs, approvals, and logs** into a durable knowledge base inside each repo.
+* Manages **code editing, version snapshots, diff staging, and safe application** of changes.
+* Bootstraps new projects with a **Script Creator** mini-app.
+* Exposes an **Agent Manager** for authority mode, safety gates, dataset/memory visibility, and command pipeline control.
 
-All logic lives in one file (`micro_agent.py`) and runs locally. You do not need a hosted service. The default model path assumes an Ollama-style API (`http://127.0.0.1:11434/api/chat`), but the architecture is generic and can be pointed at any similar local endpoint. 
+All logic runs locally in `micro_agent.py`. The default model path assumes an Ollama-style endpoint (`http://127.0.0.1:11434/api/chat`), but the client is generic and can target any compatible local API.
+
+> **High-contrast rule (non-negotiable):** all text must be readable against its background. We default to **light text on dark** across the entire UI.
+
+---
 
 ## Goals
 
-1. Treat the agent like a co-developer, not like a chatbot.
-2. Keep everything local and inspectable.
-3. Make the agent earn permission before touching disk or running commands.
-4. Persist full reasoning context, screenshots, OCR results, diffs, and approvals.
-5. Make it fast to spin up a new repo with scaffolding, docs, and a first script.
-6. Maintain strict visual clarity and high-contrast UI for all states. 
+1. Treat the Agent like a **co-developer**, not a chatbot.
+2. Keep everything **local, inspectable, and reversible**.
+3. Make the Agent **earn permission** before touching disk or running shell.
+4. Persist **full context** (reasoning, OCR, images, diffs, approvals, logs).
+5. Make starting a new repo **fast** (scaffolding + agent metadata in one click).
+6. Enforce **strict visual clarity** with high-contrast UI in every state.
+
+---
 
 ## Core Concepts
 
-### 1. RepoSession
+### 1) RepoSession (per-repo control folder)
 
-A `RepoSession` represents the "active repo."
-When you load a folder, the system prepares a hidden control directory inside it:
+When you load a repo, Workbench maintains a hidden control area:
 
-```text
+```
 <your-repo>/
   .codex_local_agent/
     agent.yaml
@@ -45,427 +343,258 @@ When you load a folder, the system prepares a hidden control directory inside it
     patches/
     history/
     dataset/
-        memory.jsonl
+      memory.jsonl
+    logs/
 ```
 
-* `agent.yaml`
-  Machine-readable config: model, endpoint, authority mode, and write/execute policy.
+* **`agent.yaml`** – machine config (provider, model, endpoint, authority/policies, style).
+* **`agent.md`** – human system card describing behavior/safety/loop.
+* **`chat_history.md`** – canonical markdown transcript; includes `<think>` and embedded images.
+* **`patches/`** – staged unified diffs proposed by the Agent.
+* **`history/`** – per-file snapshots for quick rollback.
+* **`dataset/memory.jsonl`** – per-turn “RAG seed” entries (message markdown, image paths, **dual-pass OCR** summaries, tags, hashes, timestamps).
+* **`logs/`** – session logs with objective, steps, errors, and “next actions.”
 
-* `agent.md`
-  Human-readable summary of what the agent is allowed to do, and how it behaves.
+> Each repo owns its own `.codex_local_agent` (no cross-repo bleed).
 
-* `chat_history.md`
-  Full markdown transcript between you and the agent.
-  Includes message text, `<think>` reasoning blocks, and embedded image references.
-  This is the canonical memory of the conversation.
+---
 
-* `patches/`
-  Staged diffs the agent proposes for file edits.
+### 2) Ask vs Do Work (authority split)
 
-* `history/`
-  Version snapshots of files over time so you can step backward and forward per file.
+* **Ask** = research/reason/narrate only.
+  The Agent may analyze, summarize, brainstorm, reference dataset context, and plan—**but cannot stage diffs or shell**.
 
-* `dataset/memory.jsonl`
-  The local "RAG seed."
-  Each entry logs OCR output, screenshot paths, hashes, tags, and markdown context from that turn of conversation.
-  This is how the system builds long-term recall of visuals, logs, screenshots, etc. 
+* **Do Work** = action pipeline.
+  The Agent may **propose tasks**, stage file diffs, and submit shell commands to the **Pending Command** queue. Nothing executes or writes to disk without explicit approval or policy.
 
-All of this is per-repo. Every repo has its own `.codex_local_agent` directory and its own memory.
+Both modes append to `chat_history.md`, so the narrative you build in Ask carries forward into Do Work.
 
-### 2. Ask vs Do Work
+---
 
-At the top of the chat panel there are two primary actions:
+### 3) Local LLM Client (Ollama-style)
 
-* **Ask**
-  Safe mode.
-  You are talking to the agent like a research assistant.
-  The agent can reason, summarize, explain, brainstorm, analyze screenshots, reference previous context, and build narrative.
-  The agent cannot plan changes, propose commands, or try to edit disk in this path.
-  Ask is for alignment, scoping, and clarification.
-
-* **Do Work**
-  Action mode.
-  You are authorizing the agent to plan work, generate tasks, draft code edits, produce diffs, and request commands.
-  Do Work is how you let the agent produce concrete next steps.
-
-Both modes write into `chat_history.md` so the agent can carry forward context between raw discussion (Ask) and execution planning (Do Work). The distinction is about authority, not memory. 
-
-### 3. Local LLM Client
-
-The agent talks to a local model endpoint using a simple `/api/chat` style API.
-Payload format:
+The client posts to a simple `/api/chat` endpoint:
 
 ```json
 {
   "model": "gpt-oss:20b",
-  "messages": [
-    { "role": "user", "content": "..." }
-  ]
+  "messages": [{ "role": "user", "content": "..." }]
 }
 ```
 
-The response is parsed, and the assistant's content is treated as the agent reply.
+Responses are parsed; the assistant’s content becomes the Agent reply. The active model/endpoint are declared in `agent.yaml`, allowing offline models (e.g., Ollama) or any compatible local bridge.
 
-This allows use of offline or air-gapped models (for example via Ollama) instead of depending on a remote service. The endpoint, model name, and policy are recorded in `agent.yaml`. 
+---
 
-### 4. Conversation Logging
+### 4) Conversation Logging (markdown transcript)
 
-Every turn (user and agent) is appended to `chat_history.md` with a timestamp and role header.
-The conversation is stored in markdown so you can:
+Every turn (user + agent) is appended to `chat_history.md` with timestamps.
 
-* Scroll the transcript in the UI.
-* Inspect it in plain text at any time.
-* Commit it to source control if you want.
+Renderer supports headings, lists, code fences, inline code, images, and **`<think>…</think>`** blocks.
 
-The renderer supports:
+Visual semantics:
 
-* Headings
-* Bullet lists
-* Code fences
-* Inline code
-* Images with thumbnails
-* Special `<think> ... </think>` blocks
+* `<think>` reasoning → **dim, italic, green-toned**.
+* Final answer → **larger, bright white**.
 
-`<think>` blocks are styled as dim, italic, green-toned text in the UI.
-They visually separate “internal reasoning” from “final answer.”
-The final answer is rendered in larger bright white text for readability.
-This enforces truthfulness about what is reasoning vs what is instruction. 
+This preserves the distinction between internal reasoning and operator-facing instructions.
 
-### 5. OCR and Image Intake
+---
 
-You can attach images directly in the chat input.
+### 5) Image Intake + Dual OCR
 
-When you attach images:
+Attaching images to a message:
 
-* The system displays thumbnails inline in the chat feed.
-* The absolute file paths for those images are automatically inserted into the message text so the agent has direct reference.
-* Two OCR passes run:
+* Shows **thumbnails** in-feed and injects absolute **file paths** into the message markdown for reference.
+* Runs **dual OCR**:
 
-  * `run_ocr_fast(...)` for lightweight, high-speed capture of key UI/chat text.
-  * `run_ocr_full(...)` for a more complete scan.
+  * `run_ocr_fast(...)` — quick UI/chat text capture.
+  * `run_ocr_full(...)` — deeper pass for completeness.
+* Logs both OCR outputs alongside the message and image paths into `dataset/memory.jsonl`.
 
-The output from OCR plus the message markdown and the image paths are logged into `dataset/memory.jsonl` inside the active repo. This creates a searchable dataset of screenshots and extracted text, tagged and hashed, which becomes the foundation for local semantic recall and RAG. 
+This builds a local, searchable corpus of screenshots and extracted text for later recall.
 
-### 6. Task Manager and Task Feed
+---
 
-When the agent is in Do Work mode and proposes work, those steps become tasks.
+### 6) Task Manager + Task Feed
 
-* Each task has an ID, title, detail text, and status.
-* Status can be “pending,” “running,” “done,” “skipped,” or “error.”
-* The Task Feed panel shows tasks in a scrollable list and lets you:
+Do Work plans become tasks:
 
-  * Start
-  * Skip
-  * View details
+* Each has **id, title, detail, status** (`pending | running | done | skipped | error`).
+* A **Task Feed** lists tasks with **Start / Skip / View**.
+* Selecting a task reveals its rationale/details.
 
-You can select a task to inspect more details, including agent-proposed rationale.
-The Task Feed is how high-level plans turn into actionable steps without immediately touching disk or executing commands. 
+Tasks decouple planning from execution while remaining reviewable.
 
-### 7. Staged Changes Panel
+---
 
-The agent can draft file edits. It does not write them directly.
+### 7) Staged Changes Panel (diff-first writes)
 
-Instead:
+Edit flow:
 
-1. The agent (in Do Work) proposes edits to a file.
-2. The app computes a unified diff (before vs after).
-3. That diff is shown in the Staged Changes panel with color-coded additions, deletions, and headers.
-4. You review diffs before allowing them to become real file writes.
+1. Agent proposes an edit.
+2. Workbench computes a unified diff.
+3. **Staged Changes** shows colorized `+/-` hunks.
+4. You approve; only then does Workbench write to disk and snapshot prior content to `history/`.
 
-Only after you approve do we actually write to disk.
-All staged diffs are also saved under `.codex_local_agent/patches/`. 
+All staged diffs are also saved under `.codex_local_agent/patches/`.
 
-### 8. Version History Snapshots
+---
 
-Every time a file is saved or updated with approval:
+### 8) Version History Snapshots
 
-* The previous content is snapshotted under `.codex_local_agent/history/<file>/timestamp.txt`.
-* You can step back and forth through snapshots using arrows in the Editor Info Bar.
-* You can purge a file’s stored history if needed.
+On each approved write:
 
-This gives you lightweight version control even before using git. It also prevents silent destructive writes because you always have prior copies. 
+* Prior content is saved in `.codex_local_agent/history/<file>/timestamp.txt`.
+* The **Editor Info Bar** lets you step prev/next, copy path, clone, ask for docs, or purge history.
 
-### 9. Pending Command Approval
+It’s lightweight versioning even before you commit to git.
 
-The agent can also suggest shell commands. For example, a PowerShell command to inspect environment state.
+---
 
-These proposed commands never run automatically.
-The approval pipeline is explicit:
+### 9) Pending Command Approval (shell safety)
 
-* The Pending Command Bar shows:
+Agent-proposed shell commands appear in a **Pending Command** bar:
 
-  * The exact pending command line.
-  * A set of controls:
+Controls:
 
-    * **Allow**
-      Approve and run.
-    * **Skip**
-      Reject and clear.
-    * **Try Harder**
-      Ask the agent to retry the same goal with a “push harder / refine strategy” instruction.
-    * **Edit**
-      Let you edit the proposed command text before execution.
-    * **Always Allow**
-      A toggle that whitelists repeated patterns so they can self-run without flashing for approval.
+* **Allow** (executes) – **flashes blue** every ~2s if approval is needed and “Always Allow” is off.
+* **Skip** (reject)
+* **Try Harder** (retry same goal with a push/refinement)
+* **Edit** (puts the input box into **magenta-outlined purple** edit mode to modify the pending command)
+* **Always Allow** (toggle auto-exec for repeated, explicitly permitted classes)
 
-Visual rules:
+No command runs without approval unless policy explicitly allows it.
 
-* If a command is waiting and `Always Allow` is off, the Allow button flashes blue every 2 seconds.
-  This is intentional. It is a high-contrast “attention required” signal.
-* When you press **Edit**, the chat input box switches to edit mode:
-
-  * Background changes to a dark purple.
-  * Border outline becomes magenta.
-  * High-contrast styling makes it obvious you are editing the pending command, not sending normal chat.
-* After you edit and Send, that becomes the new pending command text, and the chat box reverts to normal. 
-
-This solves a critical problem: the model can propose shell actions, but it cannot run them behind your back.
+---
 
 ## UI Layout
 
-The window is split into structured regions. 
+### A) Top Banner Mini-App Dock
 
-### A. Top Banner Mini-App Dock
+Row of square icons (right-aligned). Clicking an icon opens its panel; the icon remains highlighted while open.
 
-* A thin banner at the very top holds a row of square icons, aligned from right to left.
-* Each icon represents a “mini-app.”
-* Clicking an icon opens that mini-app’s panel.
-* The icon stays highlighted while that panel is open.
+### B) Left Dock Column
 
-### B. Left Dock Column
+Holds mini-app panels in a collapsible, scrollable stack. Closes entirely when no panels are open.
 
-* Mini-app panels live in a collapsible vertical column on the far left of the window.
-* Panels stack vertically in a scrollable region.
-* If no mini-apps are open, this column collapses to reclaim space.
-* If one or more are open, the column is visible.
+### C) Project Tree + Editor
 
-This is how you pop open extra utilities without leaving the main environment. Think of them as internal sidecar tools.
+File tree rooted at the active repo; tabbed editors; **Info Bar** with file path, prev/next snapshot, Copy Path, Clone, Doc, and Purge Hist.
+**High-contrast syntax** is enforced in the editor.
 
-### C. Project Tree and Editor
+### D) Chat / Agent Panel
 
-To the right of the mini-app column you get:
+* **Ask / Do Work** buttons
+* Brain mode dropdown: **Agent (full repo access)** / **LLM (chat only)**
+* Transcript (markdown with `<think>` styling + thumbnails)
+* Task Feed
+* Staged Changes
+* Pending Command bar
+* Chat box with image attach
+* Quick actions: **Plan Tasks**, **Remember**, **Expand Logic**, **Stage File Change**, **Write File To Disk (Approve)**
 
-* A file tree (`ProjectTree`) rooted at the active repo.
-* Editor tabs (`EditorTabs`), each one a `CodeEditor`.
-* An Info Bar under the editor with:
+---
 
-  * File path
-  * Prev/Next snapshot arrows
-  * Copy Path
-  * Clone
-  * Doc (ask agent for documentation/explanation)
-  * Purge Hist (clear stored history for this file)
+## Mini-Apps (current)
 
-The editor enforces high-contrast syntax view: light text on dark background, and high-visibility selection colors.
+### 1) ScriptCreatorApp
 
-### D. Chat / Agent Panel
+* Choose destination (path or Desktop), filename, and file type (`.py`, `.md`, `.txt`, `.cs`, `.java`, `.cpp`, `.h`, `.html`, `.ps1`, `.json`, `.csv`, …).
+* Creates folders as needed; previews collisions before overwrite.
+* Generates a README for the new folder and seeds `.codex_local_agent` (agent metadata, chat history, dataset base).
 
-On the right side sits the Chat Panel (`ChatPanel`):
+Result: an **instant “agent-ready” repo** with a starter script, docs, and control folder.
 
-* Ask / Do Work buttons
-* Brain mode dropdown
+### 2) AgentManagerApp
 
-  * “Agent (full repo access)”
-  * “LLM (chat only)”
-* Transcript view (markdown renderer with `<think>` styling and embedded thumbnails)
-* Task Feed panel
-* Staged Changes panel
-* Pending Command Bar
-* Chat input box with image attach
-* Buttons:
+* Authority mode: **Full Auto / Ask First / Read Only**
+* Policy flags from `agent.yaml`: `require_command_allow`, `safe_write_outside_repo`
+* **Always Allow** toggle for repetitive, pre-approved classes
+* Dataset summary (row count, tags, known hashes)
+* Pending Command pipeline visibility (queued command, waiting state, Always Allow status)
 
-  * Plan Tasks
-  * Remember
-  * Expand Logic
-  * Stage File Change
-  * Write File To Disk (Approve)
+---
 
-This panel is where you talk, review, approve, and push changes forward. 
+## Loading & Linking a Repo
 
-## Mini-Apps
+### 1) Clipboard Load
 
-Mini-apps run inside the UI, not as external popups. They are accessed from the top banner dock and rendered in the collapsible left column. Two core mini-apps ship in the current design. 
+Copy a file or folder path (Ctrl+C in Explorer), then **Load Path From Clipboard**.
 
-### 1. ScriptCreatorApp
+* If a **file** path: open it in an editor tab; its parent folder becomes the repo root.
+* If a **folder** path: that folder becomes repo root.
 
-Purpose: bootstrap a brand new working folder or script file fast, with documentation and policy metadata already in place.
+### 2) ScriptCreatorApp
 
-Features:
+Create a new folder + script + README + `.codex_local_agent`. The created folder becomes the active repo automatically.
 
-* Destination picker
-
-  * You can paste a target path or pick a folder.
-  * If the folder does not exist, it will be created.
-  * There is also a one-click “Desktop” target to keep it simple.
-
-* Script name + file type
-
-  * Choose a filename.
-  * Choose a file type from a dropdown like Windows “Save as type”:
-    `.py`, `.md`, `.txt`, `.cs`, `.java`, `.cpp`, `.h`, `.html`, `.ps1`, `.json`, `.csv`, etc.
-  * Default is Python.
-  * If you provide no name, it defaults to `main.py`.
-
-* Collision handling
-
-  * If the target file already exists and has content:
-
-    * The app previews that file in a popup.
-    * You can confirm overwrite or cancel.
-
-* Description box
-
-  * You write a short description of the project or script purpose.
-  * The system uses that description to auto-generate a `README.md` in the new folder.
-  * That folder is also initialized with a `.codex_local_agent` directory (agent metadata, chat_history, dataset base, etc.) so the repo is immediately “agent-ready.”
-
-Result: instant “new repo” seed with:
-
-* A starter script.
-* A README documenting intent.
-* Agent config and memory scaffolding.
-  This removes friction for starting a new tool, prototype, bot, or experiment. 
-
-### 2. AgentManagerApp
-
-Purpose: expose the agent’s state and authority controls.
-
-Shows:
-
-* Current authority mode:
-
-  * Full Auto
-    Agent can execute known-safe patterns without prompting.
-  * Ask First
-    Agent must ask before running commands or writing files.
-  * Read Only
-    Agent can propose but cannot execute or write.
-
-* Policy flags from `agent.yaml`:
-
-  * `require_command_allow`
-  * `safe_write_outside_repo`
-
-* “Always Allow Repetitive Commands” toggle:
-
-  * If enabled, repeated commands in the same category auto-run without flashing blue prompts.
-
-* Dataset summary:
-
-  * How many memory records exist in `dataset/memory.jsonl`.
-  * Which tags have been seen (like `screenshot`, `ocr_capture`).
-  * Hashes of screenshots already logged.
-
-* Pending Command pipeline state:
-
-  * Shows what command is queued.
-  * Shows if it is blocked waiting for approval.
-  * Surfaces whether “Always Allow” is currently active. 
-
-This gives you direct visibility into what the agent “knows,” what it plans to do next, and what level of autonomy it currently has.
-
-## Loading and Linking a Repo
-
-There are two main flows to define or change the active repo. 
-
-### 1. Clipboard Load
-
-* Copy a path in Explorer (Ctrl+C on a file or folder).
-* Inside Micro Agent Workbench, choose "Load Path From Clipboard".
-
-  * If the clipboard content is a file path:
-
-    * That file is opened in an editor tab.
-    * Its parent folder becomes the active repo root.
-  * If the clipboard content is a folder path:
-
-    * That folder becomes the active repo root.
-
-This instantly “attaches” an existing codebase without having to browse in a dialog.
-
-### 2. ScriptCreatorApp
-
-* Use ScriptCreatorApp to create a new folder, main script, README, and agent metadata.
-* That new folder is automatically treated as the active repo and is shown in the Project Tree.
+---
 
 ## High-Contrast Accessibility Rules
 
-The entire UI is explicitly designed for clarity:
+* **No low-contrast** color pairings—ever.
+* Critical states have loud, distinct cues:
 
-* Dark backgrounds with bright text.
-* No low-contrast states.
-* Important states get unique, loud accents:
+  * **Allow** flashes blue if approval is required.
+  * **Edit Pending Command** turns the input purple with a magenta outline.
+  * `<think>` blocks render dim, italic, green.
+  * Final answers render bright white and larger.
 
-  * Flashing blue “Allow” button when an unapproved command is pending.
-  * Magenta outline and purple background for “Edit Pending Command” mode.
-  * Green italic blocks for `<think>` reasoning.
-  * Bright white for final agent answers.
+These rules apply everywhere: editors, lists, labels, borders, and highlights.
 
-These rules are enforced everywhere, including editor text, task status labels, borders, and highlights. This reduces state confusion and makes it obvious when the agent is asking for permission versus just talking. 
+---
 
 ## Typical Workflow
 
-1. **Start or attach a repo**
+1. **Attach a repo** (clipboard) or **create** one (ScriptCreatorApp).
+2. **Ask** to align, analyze screenshots, and build narrative. OCR results + images are logged to `dataset/memory.jsonl`.
+3. Switch to **Do Work** to propose concrete changes. Tasks appear in the feed; file edits become staged diffs.
+4. **Review diffs**; approve to write. Snapshots go to `.codex_local_agent/history/`.
+5. **Handle commands** through Pending Command (Allow / Skip / Try Harder / Edit / Always Allow).
+6. **Document & iterate**: use Info Bar for docs, clones, or purge; keep cycling. The repo becomes the Agent’s durable working memory.
 
-   * Either load an existing folder via clipboard
-   * Or create a new mini-project with ScriptCreatorApp
-     (auto-generates `main.py` or other file, plus README and `.codex_local_agent`).
+---
 
-2. **Talk in Ask mode**
+## Security & Control Model
 
-   * Use Ask to explain context, paste screenshots, get analysis.
-   * Attach images of logs, game chat, UI, etc.
-   * OCR runs automatically and stores text + image references in `dataset/memory.jsonl`.
-   * All discussion is appended to `chat_history.md`.
+* No silent shell; no silent writes.
+* Authority can be downgraded to **Read Only** at any time.
+* Sensitive snapshots can be purged.
+* `agent.yaml` shows current **model/endpoint/policies**.
+* Approval gates and **Always Allow** class toggles ensure transparent, auditable automation.
 
-3. **Escalate to Do Work**
+---
 
-   * Use Do Work to request concrete changes.
-   * The agent proposes tasks and file edits.
-   * New tasks show up in the Task Feed.
-   * Proposed file edits generate diffs in Staged Changes.
+## Companion READMEs (what the Agent must read)
 
-4. **Review diffs**
+The system treats READMEs as **executable contracts**. Each folder includes a scope-named file the Agent must consult:
 
-   * Inspect color-coded diffs.
-   * Approve staged changes to write them to disk.
-   * Snapshots are stored under `.codex_local_agent/history/` so you can roll back.
+* **`Agents.md`** (root, cross-agent contract; Codex Online aware)
+* **`README_agents.md`** (home for agent configs/assets and roster guidance)
+* **`README_agent_tools.md`**, **`README_agent_macros.md`** (per-agent tools & macro framework; creation, approval, GC)
+* **`README_Styles.md`** + `agent_styles/` (style packs for personas/behaviors; includes `index.json`)
+* **`README_authority.md`** (authority modes, allow-lists, Always Allow classes)
+* **`README_default.md`** (the default agent’s stable baseline contract)
+* **`README_runtime.md`** (runtime expectations, loop discipline)
+* **`README_prompts.md`**, **`ask.md`**, **`do_work.md`**, **`try_harder.md`** (prompt contracts)
+* **`README_system_tools.md`**, **`README_system_macros.md`** (top-level system tools and macros)
+* **`archived_agents.md`** (snapshot/rollback policy, aging, and restoration)
 
-5. **Handle commands**
+> Naming rule: `README_<foldername>.md` (or a clear scope tag). The Agent must parse scope from the filename and apply the right local policy.
 
-   * If the agent wants to run a shell command, it goes to Pending Command.
-   * The UI shows the exact command.
-   * You can Allow (run), Skip, Try Harder, or Edit.
-   * Only explicit approval (or Always Allow) executes anything.
-
-6. **Document and iterate**
-
-   * Use the Info Bar under the editor to generate docs for a file, clone it, or purge old snapshots.
-   * Continue iterating. The agent now has memory of your screenshots, task history, and approved changes.
-
-This loop repeats. Over time, the repo itself becomes the agent’s working memory, including design rationale, OCR’d screenshots of bugs, staged diffs, and final accepted writes. 
-
-## Security and Control Model
-
-* The agent cannot silently run commands.
-* The agent cannot silently write to disk.
-* All proposed work is visible and reviewable before execution.
-* You can downgrade authority (Read Only) at any point in the Agent Manager.
-* You can purge file history if sensitive content was captured.
-* You can inspect `agent.yaml` at any time to confirm model, endpoint, and policies.
-
-The design treats the agent as a controlled collaborator inside your repo, not as an external automation layer with hidden access. 
+---
 
 ## Summary
 
-Micro Agent Workbench is a local autonomous assistant plus an IDE shell.
-It merges:
+Micro Agent Workbench merges:
 
-* A repo-aware AI assistant with persistent memory.
-* A diff-first code editor with snapshot history.
-* A task feed and approval gate for work.
-* A screenshot/OCR pipeline that feeds a local dataset for future recall.
-* A project bootstrapper that can spin up a new repo, script, and README in seconds.
-* An Agent Manager that surfaces autonomy, safety gates, and memory state.
+* A **repo-aware AI** with persistent memory and explicit authority gates.
+* A **diff-first editor** with snapshots and safe writes.
+* A **task feed** + **pending command** pipeline for controlled execution.
+* A **screenshot/OCR** dataset for local recall.
+* A **project bootstrapper** for instant, agent-ready repos.
+* An **Agent Manager** that surfaces autonomy, safety, memory, and queues.
 
-Everything is transparent. Everything is high contrast. Nothing runs without you seeing it and approving it. 
+Everything is transparent. Everything is high contrast. **Nothing runs without you seeing and approving it.**
+

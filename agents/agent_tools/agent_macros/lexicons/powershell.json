@@ -1,0 +1,15 @@
+{
+  "open_in_editor": [
+    "code \"{path}\"",
+    "notepad \"{path}\""
+  ],
+  "make_dir": [
+    "New-Item -ItemType Directory -Force \"{path}\""
+  ],
+  "copy_glob": [
+    "Copy-Item \"{src}\" \"{dst}\" -Force"
+  ],
+  "list_dir": [
+    "Get-ChildItem \"{path}\""
+  ]
+}

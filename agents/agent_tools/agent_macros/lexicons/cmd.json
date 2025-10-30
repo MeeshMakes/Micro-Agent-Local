@@ -1,0 +1,14 @@
+{
+  "open_in_editor": [
+    "start \"\" \"{path}\""
+  ],
+  "make_dir": [
+    "mkdir \"{path}\""
+  ],
+  "copy_glob": [
+    "copy /Y \"{src}\" \"{dst}\""
+  ],
+  "list_dir": [
+    "dir \"{path}\""
+  ]
+}

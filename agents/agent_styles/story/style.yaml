@@ -1,0 +1,15 @@
+name: story
+version: 1
+tags: [story, narrative, documentation, outline]
+plan:
+  depth: medium
+  require_pending_command: false
+tools:
+  prefer_macros: false
+  allow_shell: read_only
+memory:
+  rag_bias: [docs, styleguides, requirements]
+ui:
+  theme_file: ui/theme.json
+  think_style: { color: "#6b8f72", italic: true, size: "smaller" }
+  answer_style: { color: "#ffffff", size: "larger" }

@@ -1,0 +1,7 @@
+overrides:
+  macros: { enabled: true }
+  runtime: { max_parallel_tasks: 2 }
+  preferences:
+    code_style: "2025-modern"
+    small_commits: true
+    write_tests_when_safe: true

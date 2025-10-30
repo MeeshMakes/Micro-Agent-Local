@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "fields": {
+    "context": "Merged chain docs (base, local, project)",
+    "objective": "Single-sentence objective",
+    "constraints": [
+      "high_contrast_ui",
+      "max_parallel_calls=2"
+    ],
+    "artifacts": [
+      "files_changed",
+      "stubs_appended",
+      "logs_updated"
+    ]
+  }
+}

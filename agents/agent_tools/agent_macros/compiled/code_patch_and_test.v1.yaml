@@ -1,0 +1,25 @@
+# code_patch_and_test.v1.yaml
+macro_id: code.patch.and.test.v1
+title: "Backup ▸ inline patch ▸ run tests ▸ rollback on fail"
+shell: powershell
+authority: ask_first
+risk: medium
+requires:
+  - repo_root
+params:
+  target_file: "src/main.py"
+  find: "TODO_FIX"
+  replace: "FIXED"
+  tests: "python scripts/run_tests_stub.py"
+preflight:
+  - "Test-Path \"{repo_root}\""
+  - "Test-Path \"{repo_root}\scripts\""
+steps:
+  - "python scripts/apply_text_patch.py --file \"{repo_root}\{target_file}\" --find \"{find}\" --replace \"{replace}\" --guard"
+  - "{tests}"
+success:
+  - "echo TESTS PASSED"
+rollback:
+  - "echo Manual restore from backups folder if tests fail"
+notes: |
+  This compiled macro demonstrates guarded edits + basic test integration.

@@ -1,0 +1,1 @@
+macros go in this folder for each agent. this is where an independent 'enabled' agent can stack its built macros. if independent is off then it shares its macros with all other agents set to be shared.
