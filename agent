@@ -1,0 +1,66 @@
+#!/usr/bin/env python3
+"""Local agent CLI entry point.
+
+Implements the `agent data view` pipeline described in Required-Updates.md §133.
+By default `agent data view <file>` streams JSON lines so that another command
+(such as `sample --n 1000`) can post-process the data. Use `--markdown` for a
+pretty-printed preview in the terminal.
+"""
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+from typing import Any
+
+from system_tools.data_viewer import DataViewManager, table_to_markdown, iter_rows_as_json
+
+
+def _cmd_data_view(args: argparse.Namespace) -> int:
+    manager = DataViewManager()
+    table = manager.load_table(
+        Path(args.file),
+        limit=args.limit,
+        sample=args.sample,
+        delimiter=args.delimiter,
+        filter_text=args.filter or "",
+        filter_column=args.column,
+    )
+
+    if args.markdown:
+        print(table_to_markdown(table, max_rows=args.max_rows))
+    else:
+        for line in iter_rows_as_json(table):
+            print(line)
+    return 0
+
+
+def _build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="agent", description="Local agent CLI")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    data_parser = sub.add_parser("data", help="Data utilities")
+    data_sub = data_parser.add_subparsers(dest="data_command", required=True)
+
+    view_parser = data_sub.add_parser("view", help="Stream a dataset for inspection")
+    view_parser.add_argument("file", help="Path to CSV/TSV/Parquet file")
+    view_parser.add_argument("--limit", type=int, default=500, help="Max rows to load for preview")
+    view_parser.add_argument("--sample", type=int, default=0, help="Optional random sample size")
+    view_parser.add_argument("--filter", default="", help="Case-insensitive filter text")
+    view_parser.add_argument("--column", default=None, help="Column to apply the filter to")
+    view_parser.add_argument("--delimiter", default=None, help="Override delimiter for CSV/TSV files")
+    view_parser.add_argument("--markdown", action="store_true", help="Render markdown preview instead of JSON lines")
+    view_parser.add_argument("--max-rows", type=int, default=20, help="Max rows in markdown preview")
+    view_parser.set_defaults(func=_cmd_data_view)
+
+    return parser
+
+
+def main(argv: Any = None) -> int:
+    parser = _build_parser()
+    args = parser.parse_args(argv)
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

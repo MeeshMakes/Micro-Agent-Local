@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+"""Sampling utility that consumes JSON lines from `agent data view`.
+
+Usage: agent data view file.csv | sample --n 1000
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import random
+import sys
+from typing import List, Dict
+
+from system_tools.data_viewer import DataTable, table_to_markdown, iter_rows_as_json
+
+
+def _build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="sample", description="Sample JSON line table output")
+    parser.add_argument("--n", type=int, default=1000, help="Number of rows to sample")
+    parser.add_argument("--seed", type=int, default=None, help="Optional RNG seed")
+    parser.add_argument("--markdown", action="store_true", help="Render markdown preview instead of JSON lines")
+    parser.add_argument("--max-rows", type=int, default=20, help="Max rows in markdown preview")
+    return parser
+
+
+def _read_table_from_stdin() -> DataTable:
+    header = None
+    rows: List[Dict[str, str]] = []
+    for line in sys.stdin:
+        line = line.strip()
+        if not line:
+            continue
+        payload = json.loads(line)
+        if payload.get("type") == "header":
+            header = payload
+        elif payload.get("type") == "row":
+            rows.append(payload.get("data", {}))
+    if header is None:
+        raise SystemExit("sample: expected header line from agent data view")
+    columns = header.get("columns", [])
+    source = header.get("source", "stdin")
+    return DataTable(columns=columns, rows=rows, total_rows=len(rows), source=source)
+
+
+def main(argv=None) -> int:
+    parser = _build_parser()
+    args = parser.parse_args(argv)
+
+    table = _read_table_from_stdin()
+    if args.seed is not None:
+        random.seed(args.seed)
+    sample_size = min(args.n, len(table.rows))
+    sampled_rows = random.sample(table.rows, sample_size) if sample_size < len(table.rows) else list(table.rows)
+    sampled = DataTable(
+        columns=table.columns,
+        rows=sampled_rows,
+        total_rows=table.total_rows,
+        source=table.source,
+    )
+
+    if args.markdown:
+        print(table_to_markdown(sampled, max_rows=args.max_rows))
+    else:
+        for line in iter_rows_as_json(sampled):
+            print(line)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
