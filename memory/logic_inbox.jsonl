@@ -10,3 +10,5 @@
 {"timestamp":"2025-10-30T11:54:46Z","area":"repo-control","need":"Seed required control directories, ledgers, and mirrored task queues","why":"Required-Updates.md:Global Agent Operations A","status":"done","blocked_on":"","urgency":"high","modes":{"ask":true,"do_work":true}}
 {"timestamp": "2025-10-30T14:04:50Z", "area": "ui/chat_panel", "action": "start chat layout refresh", "why": "Required-Updates.md:\u00a71", "status": "working", "notes": ""}
 {"timestamp": "2025-10-30T14:07:26Z", "area": "ui/chat_panel", "action": "implemented chat layout refresh", "why": "Required-Updates.md:\u00a71", "status": "done", "notes": ""}
+{"timestamp": "2025-10-30T15:05:08.903819+00:00", "area": "ui.chat", "action": "start chat layout", "why": "Required-Updates.md:§1", "status": "working", "notes": ""}
+{"timestamp": "2025-10-30T15:05:41.234514+00:00", "area": "ui.chat", "action": "implemented chat layout", "why": "Required-Updates.md:§1", "status": "done", "notes": ""}
