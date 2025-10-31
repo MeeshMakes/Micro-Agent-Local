@@ -12,3 +12,6 @@
 {"timestamp": "2025-10-30T14:07:26Z", "area": "ui/chat_panel", "action": "implemented chat layout refresh", "why": "Required-Updates.md:\u00a71", "status": "done", "notes": ""}
 {"timestamp": "2025-10-30T15:05:08.903819+00:00", "area": "ui.chat", "action": "start chat layout", "why": "Required-Updates.md:§1", "status": "working", "notes": ""}
 {"timestamp": "2025-10-30T15:05:41.234514+00:00", "area": "ui.chat", "action": "implemented chat layout", "why": "Required-Updates.md:§1", "status": "done", "notes": ""}
+{"timestamp": "2025-10-31T00:04:10.160800+00:00", "area": "ui.chat", "action": "start chat layout compliance", "why": "Required-Updates.md:\u00a71", "status": "working", "notes": ""}
+{"timestamp": "2025-10-31T00:06:47.797225+00:00", "area": "ui.chat", "action": "implemented dataset buckets", "why": "Required-Updates.md:\u00a72", "status": "done", "notes": ""}
+{"timestamp": "2025-10-31T00:05:30+00:00", "area": "memory.dataset", "action": "start dataset bucket store", "why": "Required-Updates.md:\u00a72", "status": "working", "notes": ""}

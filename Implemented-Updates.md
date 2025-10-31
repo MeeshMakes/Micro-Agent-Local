@@ -16,3 +16,8 @@
 - Task ID: chat-panel-vertical
 - Summary: Added a vertical splitter for transcript/input and grouped Attach, Send, Ask, and Do Work controls directly under the chat block to finalize geometry requirements.
 - Evidence: docs/changes/CHANGELOG.md, docs/codex-local/required_updates_progress.md, .codex_local_agent/acceptance/chat_panel_layout.md, .codex_local_agent/impl_check/chat_panel_layout.txt, logs/session_2025-10-30.md
+
+## 2025-10-31T00:06:52+00:00 — Dataset Buckets & OCR (§2)
+- Task ID: dataset-bucket-store
+- Summary: Added BucketStore versioning with supersession diffs, linked dataset rows to bucket_ids, and persisted dual OCR text/hashes per Required-Updates §2.
+- Evidence: micro_agent.py, docs/changes/CHANGELOG.md, docs/codex-local/required_updates_progress.md, .codex_local_agent/acceptance/dataset_buckets.md, logs/session_2025-10-31.md

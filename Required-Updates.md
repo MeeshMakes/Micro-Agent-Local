@@ -16969,22 +16969,23 @@ This document is now the canonical, self-contained procedure for installing, usi
 ---
 ## Spec Verification Block
 STATUS: IN PROGRESS
-SNAPSHOT: 2025-10-30T11:53:27Z
+SNAPSHOT: 2025-10-31T00:06:52Z
 
 ### Outstanding Requirements (Checklist)
 - [x] Control directories seeded — Global Agent Operations §A — Acceptance: required folders/files exist and are append-only — Evidence: docs/changes/CHANGELOG.md, docs/codex-local/required_updates_progress.md — Last Checked: 2025-10-30T11:53:27Z
-- [ ] Chat panel vertical layout and relocated controls — §1 — Acceptance: chat panel geometry updated with markdown feed and Ask/Do Work buttons near input — Evidence: Pending — Last Checked: 2025-10-30T11:53:27Z
-- [ ] Dataset capture and OCR buckets — §2 — Acceptance: dual OCR rows persisted to `.codex_local_agent/dataset/memory.jsonl` with tags/hashes — Evidence: Pending — Last Checked: 2025-10-30T11:53:27Z
+- [x] Chat panel vertical layout and relocated controls — §1 — Acceptance: chat panel geometry updated with markdown feed and Ask/Do Work buttons near input — Evidence: docs/changes/CHANGELOG.md, docs/codex-local/required_updates_progress.md, ./.codex_local_agent/acceptance/chat_panel_layout.md — Last Checked: 2025-10-31T00:06:52Z
+- [x] Dataset capture and OCR buckets — §2 — Acceptance: dual OCR rows persisted to `.codex_local_agent/dataset/memory.jsonl` with tags/hashes and bucket diff logs — Evidence: micro_agent.py, ./.codex_local_agent/acceptance/dataset_buckets.md — Last Checked: 2025-10-31T00:06:52Z
 - [ ] Mini-app dock upgrades and Script Creator flows — §§3–4 — Acceptance: dock toggle, labeled icons, Script Creator automation — Evidence: Pending — Last Checked: 2025-10-30T11:53:27Z
 - [ ] Authority manager and rant ingestion pipeline — §§5 & 27 — Acceptance: allow-list visibility, Implement Required Updates runner, Task-Index sync — Evidence: Pending — Last Checked: 2025-10-30T11:53:27Z
 
 ### Extended Merged Corrections
 - 2025-10-30T11:53:27Z No additional merges required; newest instructions at document end stand as written.
+- 2025-10-31T00:06:52Z Dataset bucket implementation confirmed; later instructions unchanged and still authoritative.
 
 ### Evidence Index (recent)
 - CHANGELOG: docs/changes/CHANGELOG.md
 - PROGRESS: docs/codex-local/required_updates_progress.md
-- SESSIONS: logs/session_2025-10-30.md
+- SESSIONS: logs/session_2025-10-30.md, logs/session_2025-10-31.md
 - ACCEPTANCE: ./.codex_local_agent/acceptance/
 - IMPL-CHECK: ./.codex_local_agent/impl_check/
 

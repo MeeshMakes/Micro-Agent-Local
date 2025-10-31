@@ -18,3 +18,8 @@
 - Added a vertical splitter to keep transcript and input locked as a tall column, matching Required-Updates.md §1 geometry (micro_agent.py).
 - Grouped Send, Ask, Do Work, and Attach controls into one row directly under the chat box for compliant intent selection.
 - Left pending command, brain selector, and automation buttons stacked below the chat block to maintain high-contrast control flow.
+
+## 2025-10-31T00:06:52+00:00 — Dataset buckets and diff memory
+- Introduced an append-only `BucketStore` that versions chat directives, records superseded status, and emits diff artifacts under `.codex_local_agent/memory/buckets`.
+- Linked chat logging to the bucket store so dataset entries carry `bucket_id` tags alongside dual OCR hashes for offline RAG (`micro_agent.py`).
+- Updated dataset logging to include sanitized, deterministic tags and bucket references, fulfilling Required-Updates.md §2.2–§2.5.
