@@ -1,5 +1,5 @@
 {
-  "last_update": "2025-10-31T00:07:23.737139+00:00",
+  "last_update": "2025-10-31T01:03:10.770984+00:00",
   "chat_layout": {
     "left_column": "transcript and input stack vertically",
     "send_controls": "ask/do work toggles with send button under the message box",
@@ -9,5 +9,15 @@
     "bucket_store": "BucketStore writes append-only versions + diffs under .codex_local_agent/memory/buckets.",
     "dataset_tags": "Each OCR row stores bucket_id, sha256 hashes, and sanitized tags for offline RAG.",
     "dual_ocr": "Fast + full OCR text are persisted per image turn per Required-Updates \u00a72."
+  },
+  "mini_app_dock": {
+    "labeled_buttons": "Dock buttons display full names and highlight when active.",
+    "arrow_handle": "A blue-bordered handle expands or collapses the left dock without losing panel state.",
+    "auto_collapse": "When no mini-apps remain active the dock width drops to zero to return workspace space."
+  },
+  "script_creator": {
+    "desktop_shortcut": "Desktop shortcut builds the project folder under the user Desktop using the provided name.",
+    "bootstrap_assets": "New projects receive .codex_local_agent/ with agent.yaml, agent.md, dataset/log/memory scaffolding.",
+    "overwrite_guard": "Existing files prompt with a high-contrast preview before overwrite and respect user cancellation."
   }
 }

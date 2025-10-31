@@ -5,8 +5,8 @@
 | RU-sync | Required-Updates sync loop scaffolding | ✅ | Completed via STUB-20251029-00 to keep planning artifacts in sync. |
 | RU-1 | Chat panel layout and controls overhaul | ✅ | Implemented vertical splitter and inline Ask/Do Work row (chat-panel-vertical). |
 | RU-2 | Dataset buckets and diff memory | ✅ | Bucket store now versions logic, records diffs, and ties dataset rows to bucket_ids. |
-| RU-3 | Mini-app dock and sliding column | ⏳ | Pending implementation (stub STUB-20251029-03). |
-| RU-4 | Script Creator full feature set | ⏳ | Pending implementation (stub STUB-20251029-04). |
+| RU-3 | Mini-app dock and sliding column | ✅ | Arrow handle, labeled icons, and auto-collapse per Required-Updates.md §§3.1–3.3. |
+| RU-4 | Script Creator full feature set | ✅ | Desktop shortcut, README/bootstrap seeding, overwrite guard per Required-Updates.md §4. |
 | RU-5 | Agent Manager authority + sharing extensions | ⏳ | Pending implementation (stub STUB-20251029-05). |
 | RU-26 | Update ledger cross-references | ⏳ | Pending implementation (stub STUB-20251029-06). |
 | RU-27 | Rant capture and Required Updates pipeline | ⏳ | Pending implementation (stub STUB-20251029-07). |
@@ -17,3 +17,4 @@
 ✅ 2025-10-30T15:05:52+0000 Chat panel vertical stack + send-mode controls relocated near input — Required-Updates.md:§1
 
 ✅ 2025-10-31T00:06:52+00:00 Dataset capture writes bucket-linked rows with dual OCR and diff logging — Required-Updates.md:§2
+✅ 2025-10-31T01:01:51Z Mini-app dock, arrow handle, and Script Creator bootstrap delivered — Required-Updates.md:§§3-4

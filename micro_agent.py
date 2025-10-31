@@ -2208,8 +2208,8 @@ class ScriptCreatorApp(QtWidgets.QFrame):
       - After creation, load that folder as repo
     """
 
-    requestCreateProject = QtCore.Signal(str, str, str, str, bool)
-    # args: dest_folder, script_name, file_ext, description, use_desktop
+    requestCreateProject = QtCore.Signal(str, str, str, str, str, bool)
+    # args: dest_folder, project_folder, explicit_filename, file_ext, description, use_desktop
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -2231,6 +2231,9 @@ class ScriptCreatorApp(QtWidgets.QFrame):
 
         self.dest_edit = QtWidgets.QLineEdit()
         self.script_name_edit = QtWidgets.QLineEdit()
+        self.script_name_edit.setPlaceholderText("Project folder name (required)")
+        self.filename_edit = QtWidgets.QLineEdit()
+        self.filename_edit.setPlaceholderText("Optional filename (defaults to main.py)")
         self.desc_edit = QtWidgets.QTextEdit()
         self.filetype_combo = QtWidgets.QComboBox()
         self.filetype_combo.addItems([
@@ -2241,7 +2244,8 @@ class ScriptCreatorApp(QtWidgets.QFrame):
 
         layout = QtWidgets.QFormLayout(self)
         layout.addRow("Destination folder:", self.dest_edit)
-        layout.addRow("Script name:", self.script_name_edit)
+        layout.addRow("Project folder:", self.script_name_edit)
+        layout.addRow("Filename (optional):", self.filename_edit)
         layout.addRow("File type:", self.filetype_combo)
         layout.addRow("Description:", self.desc_edit)
 
@@ -2256,13 +2260,21 @@ class ScriptCreatorApp(QtWidgets.QFrame):
     def _emit_create(self, use_desktop: bool):
         dest_folder = self.dest_edit.text().strip()
         script_name = self.script_name_edit.text().strip()
+        explicit_filename = self.filename_edit.text().strip()
         desc = self.desc_edit.toPlainText().strip()
         file_ext = self.filetype_combo.currentText().strip()  # like ".py"
+        if not script_name:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Missing project name",
+                "Project folder name is required to create the repo.",
+            )
+            return
         if not desc:
             QtWidgets.QMessageBox.warning(self, "Missing description",
                                           "Description is required. It seeds README.md")
             return
-        self.requestCreateProject.emit(dest_folder, script_name, file_ext, desc, use_desktop)
+        self.requestCreateProject.emit(dest_folder, script_name, explicit_filename, file_ext, desc, use_desktop)
 
 
 class AgentManagerApp(QtWidgets.QFrame):
@@ -2351,6 +2363,9 @@ class LeftDockStack(QtWidgets.QScrollArea):
     Vertical stack of mini-app panels.
     Collapses if empty.
     """
+
+    visibilityChanged = QtCore.Signal(bool)
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWidgetResizable(True)
@@ -2367,6 +2382,8 @@ class LeftDockStack(QtWidgets.QScrollArea):
         self.setWidget(self.inner)
 
         self.panels: Dict[str, QtWidgets.QWidget] = {}
+        self.panel_state: Dict[str, bool] = {}
+        self.preferred_width = 320
 
     def show_panel(self, key: str, widget: QtWidgets.QWidget):
         # If panel not already added, insert above the stretch
@@ -2374,23 +2391,34 @@ class LeftDockStack(QtWidgets.QScrollArea):
             self.vbox.insertWidget(self.vbox.count()-1, widget)
             self.panels[key] = widget
         widget.show()
+        self.panel_state[key] = True
         self._update_visibility()
 
     def hide_panel(self, key: str):
         if key in self.panels:
             w = self.panels[key]
             w.hide()
+            self.panel_state[key] = False
         self._update_visibility()
 
-    def toggle_panel(self, key: str, widget: QtWidgets.QWidget):
-        if key not in self.panels or not self.panels[key].isVisible():
-            self.show_panel(key, widget)
-        else:
+    def toggle_panel(self, key: str, widget: QtWidgets.QWidget) -> bool:
+        currently_visible = self.panel_state.get(key, False)
+        if currently_visible:
             self.hide_panel(key)
+            return False
+        self.show_panel(key, widget)
+        return True
 
     def _update_visibility(self):
-        any_visible = any(w.isVisible() for w in self.panels.values())
+        any_visible = any(self.panel_state.values())
         self.setVisible(any_visible)
+        self.visibilityChanged.emit(any_visible)
+
+    def has_visible_panels(self) -> bool:
+        return any(self.panel_state.values())
+
+    def is_panel_visible(self, key: str) -> bool:
+        return self.panel_state.get(key, False)
 
 
 class DockBar(QtWidgets.QWidget):
@@ -2408,19 +2436,25 @@ class DockBar(QtWidgets.QWidget):
             f"QWidget {{ background-color:{BG_PANEL}; color:{FG_TEXT}; "
             f"border-bottom:1px solid {BORDER_COLOR}; }}"
             f"QToolButton {{ background-color:{BG_WINDOW}; color:{FG_TEXT}; "
-            f"border:1px solid {BORDER_COLOR}; width:28px; height:28px; }}"
+            f"border:1px solid {BORDER_COLOR}; padding:4px 8px; }}"
             f"QToolButton:checked {{ background-color:{ACCENT_FOCUS}; color:{BG_PANEL}; }}"
         )
         lay = QtWidgets.QHBoxLayout(self)
         lay.setContentsMargins(4,2,4,2)
 
         self.btn_agent_mgr = QtWidgets.QToolButton()
-        self.btn_agent_mgr.setText("A")  # high contrast text
+        self.btn_agent_mgr.setText("Agent Manager")
+        self.btn_agent_mgr.setToolTip("Toggle Agent Manager panel")
+        self.btn_agent_mgr.setToolButtonStyle(QtCore.Qt.ToolButtonTextOnly)
+        self.btn_agent_mgr.setMinimumWidth(140)
         self.btn_agent_mgr.setCheckable(True)
         self.btn_agent_mgr.clicked.connect(self.requestToggleAgentManager.emit)
 
         self.btn_script_creator = QtWidgets.QToolButton()
-        self.btn_script_creator.setText("S")
+        self.btn_script_creator.setText("Script Creator")
+        self.btn_script_creator.setToolTip("Toggle Script Creator panel")
+        self.btn_script_creator.setToolButtonStyle(QtCore.Qt.ToolButtonTextOnly)
+        self.btn_script_creator.setMinimumWidth(140)
         self.btn_script_creator.setCheckable(True)
         self.btn_script_creator.clicked.connect(self.requestToggleScriptCreator.emit)
 
@@ -2434,6 +2468,35 @@ class DockBar(QtWidgets.QWidget):
             self.btn_agent_mgr.setChecked(active)
         elif key == "script_creator":
             self.btn_script_creator.setChecked(active)
+
+
+class DockHandleButton(QtWidgets.QToolButton):
+    """Small arrow handle that expands/collapses the dock."""
+
+    toggledExpansion = QtCore.Signal(bool)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setCheckable(True)
+        self.setCursor(QtCore.Qt.PointingHandCursor)
+        self.setStyleSheet(
+            f"QToolButton {{ background-color:{BG_WINDOW}; color:{FG_TEXT}; "
+            f"border:2px solid {ACCENT_FOCUS}; width:24px; height:48px; }}"
+            f"QToolButton:checked {{ background-color:{ACCENT_FOCUS}; color:{BG_PANEL}; }}"
+        )
+        self.setToolTip("Toggle mini-app dock")
+        self.setArrowType(QtCore.Qt.RightArrow)
+        self.toggled.connect(self._on_toggled)
+
+    def _on_toggled(self, checked: bool):
+        self.setArrowType(QtCore.Qt.LeftArrow if checked else QtCore.Qt.RightArrow)
+        self.toggledExpansion.emit(checked)
+
+    def set_expanded(self, expanded: bool):
+        self.blockSignals(True)
+        self.setChecked(expanded)
+        self.setArrowType(QtCore.Qt.LeftArrow if expanded else QtCore.Qt.RightArrow)
+        self.blockSignals(False)
 
 
 # --------------------------
@@ -2487,6 +2550,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # mini-app infra
         self.left_dock_stack = LeftDockStack()
         self.dock_bar = DockBar()
+        self.dock_handle = DockHandleButton()
+        self.dock_handle.setVisible(False)
 
         # mini-app instances
         self.script_creator_app = ScriptCreatorApp()
@@ -2503,6 +2568,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.dock_bar.requestToggleAgentManager.connect(
             lambda: self._toggle_mini_app("agent_manager")
         )
+
+        self.dock_handle.toggledExpansion.connect(self._set_dock_expanded)
+        self.left_dock_stack.visibilityChanged.connect(self._on_dock_visibility_change)
+
+        self.dock_expanded = False
+        self._active_panels: Dict[str, bool] = {
+            "script_creator": False,
+            "agent_manager": False,
+        }
 
         # connect signals main <-> chat panel
         self.tree.fileActivated.connect(self._open_file_in_editor)
@@ -2554,10 +2628,17 @@ class MainWindow(QtWidgets.QMainWindow):
         main_split_center.setSizes([800, 800])
 
         # big horizontal split: left_dock_stack (collapsible) + main_split_center
-        hsplit_all = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
-        hsplit_all.addWidget(self.left_dock_stack)
-        hsplit_all.addWidget(main_split_center)
-        hsplit_all.setSizes([0, 1500])  # start collapsed
+        self.hsplit_all = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
+        self.hsplit_all.addWidget(self.left_dock_stack)
+        self.hsplit_all.addWidget(main_split_center)
+        self.hsplit_all.setSizes([0, 1500])  # start collapsed
+
+        handle_wrapper = QtWidgets.QWidget()
+        handle_layout = QtWidgets.QHBoxLayout(handle_wrapper)
+        handle_layout.setContentsMargins(0, 0, 0, 0)
+        handle_layout.setSpacing(4)
+        handle_layout.addWidget(self.dock_handle, 0, QtCore.Qt.AlignTop)
+        handle_layout.addWidget(self.hsplit_all, 1)
 
         # final vertical split: dock_bar on top, hsplit_all middle, console bottom
         # dock_bar stays pinned at top via a wrapper widget because QSplitter cannot pin.
@@ -2568,7 +2649,7 @@ class MainWindow(QtWidgets.QMainWindow):
         vwrap_layout.addWidget(self.dock_bar, 0)
 
         bottom_split = QtWidgets.QSplitter(QtCore.Qt.Vertical)
-        bottom_split.addWidget(hsplit_all)
+        bottom_split.addWidget(handle_wrapper)
         bottom_split.addWidget(self.console)
         bottom_split.setSizes([700, 200])
 
@@ -2651,15 +2732,63 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _toggle_mini_app(self, key: str):
         if key == "script_creator":
-            self.left_dock_stack.toggle_panel("script_creator", self.script_creator_app)
-            self.dock_bar.set_active("script_creator", self.script_creator_app.isVisible())
+            visible = self.left_dock_stack.toggle_panel("script_creator", self.script_creator_app)
+            self._active_panels["script_creator"] = visible
+            self.dock_bar.set_active("script_creator", visible)
         elif key == "agent_manager":
-            self.left_dock_stack.toggle_panel("agent_manager", self.agent_manager_app)
-            self.dock_bar.set_active("agent_manager", self.agent_manager_app.isVisible())
+            visible = self.left_dock_stack.toggle_panel("agent_manager", self.agent_manager_app)
+            self._active_panels["agent_manager"] = visible
+            self.dock_bar.set_active("agent_manager", visible)
+            if visible:
+                self._refresh_agent_manager_info()
 
-        # Refresh dataset / authority info in AgentManagerApp each toggle
-        if key == "agent_manager":
-            self._refresh_agent_manager_info()
+        self._sync_dock_after_toggle()
+
+    def _set_dock_expanded(self, expanded: bool):
+        if not any(self._active_panels.values()):
+            self.dock_handle.set_expanded(False)
+            self.dock_expanded = False
+            self.left_dock_stack.setVisible(False)
+            self._apply_dock_sizes()
+            return
+        self.dock_expanded = expanded
+        self.left_dock_stack.setVisible(expanded)
+        self._apply_dock_sizes()
+
+    def _on_dock_visibility_change(self, visible: bool):
+        if not visible and not any(self._active_panels.values()):
+            self.dock_bar.set_active("script_creator", False)
+            self.dock_bar.set_active("agent_manager", False)
+            self.dock_handle.setVisible(False)
+            self.dock_handle.set_expanded(False)
+            self.dock_expanded = False
+            self._apply_dock_sizes()
+
+    def _sync_dock_after_toggle(self):
+        has_any = any(self._active_panels.values())
+        if not has_any:
+            self.dock_handle.setVisible(False)
+            self.dock_handle.set_expanded(False)
+            self.dock_expanded = False
+            self.left_dock_stack.setVisible(False)
+        else:
+            if not self.dock_expanded:
+                self.dock_expanded = True
+                self.dock_handle.set_expanded(True)
+            self.left_dock_stack.setVisible(self.dock_expanded)
+            self.dock_handle.setVisible(True)
+        self._apply_dock_sizes()
+
+    def _apply_dock_sizes(self):
+        total = max(self.width() - 20, 600)
+        left_width = self.left_dock_stack.preferred_width if self.dock_expanded else 0
+        left_width = min(left_width, max(total - 400, 320)) if self.dock_expanded else 0
+        right_width = max(total - left_width, 400)
+        self.hsplit_all.setSizes([left_width, right_width])
+
+    def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
+        super().resizeEvent(event)
+        self._apply_dock_sizes()
 
     # ----------------------
     # REPO LOADING / PATH ACTIVATION
@@ -2712,8 +2841,15 @@ class MainWindow(QtWidgets.QMainWindow):
     # MINI-APP: SCRIPT CREATOR HANDLING
     # ----------------------
 
-    def _handle_create_project(self, dest_folder: str, script_name: str,
-                               file_ext: str, desc: str, use_desktop: bool):
+    def _handle_create_project(
+        self,
+        dest_folder: str,
+        project_folder: str,
+        explicit_filename: str,
+        file_ext: str,
+        desc: str,
+        use_desktop: bool,
+    ):
         """
         Create new project folder.
         1. Resolve destination path. If use_desktop True, create folder on Desktop.
@@ -2725,66 +2861,193 @@ class MainWindow(QtWidgets.QMainWindow):
         7. Bootstrap .codex_local_agent folder.
         8. Load repo into app.
         """
+        base_project_name = sanitize_filename(project_folder) if project_folder else "NewProject"
+
         if use_desktop:
             desktop = Path(os.path.join(os.path.expanduser("~"), "Desktop"))
-            dest_folder = str(desktop / sanitize_filename(dest_folder or "NewProject"))
+            dest_folder = str(desktop)
 
-        dest_path = Path(dest_folder).resolve()
-        ensure_dir(dest_path)
+        dest_root = Path(dest_folder).expanduser().resolve() if dest_folder else Path.home().resolve()
+        ensure_dir(dest_root)
 
-        base_name = sanitize_filename(script_name) if script_name else "main"
-        if not file_ext.startswith("."):
-            file_ext = "." + file_ext
-        filename = base_name + file_ext
+        project_path = (dest_root / base_project_name).resolve()
+        ensure_dir(project_path)
 
-        target_file = dest_path / filename
+        # update UI field so the user sees the resolved location
+        self.script_creator_app.dest_edit.setText(str(project_path))
+
+        if explicit_filename:
+            sanitized_file = sanitize_filename(explicit_filename)
+            file_path = Path(sanitized_file)
+            if not file_path.suffix:
+                sanitized_file = sanitized_file + (file_ext if file_ext.startswith(".") else f".{file_ext}")
+        else:
+            base_name = sanitize_filename(project_folder) if project_folder else "main"
+            if not base_name:
+                base_name = "main"
+            ext = file_ext if file_ext.startswith(".") else f".{file_ext}"
+            sanitized_file = base_name + ext
+
+        target_file = project_path / sanitized_file
 
         # Overwrite check
         if target_file.exists():
             existing = read_text_safe(target_file)
             if existing.strip():
-                # show preview and confirm
                 preview = existing[:500]
-                resp = QtWidgets.QMessageBox.question(
-                    self,
-                    "Overwrite?",
-                    (
-                        f"{target_file} exists and has content:\n\n"
-                        f"{preview}\n\n"
-                        "Overwrite this file?"
-                    ),
+                preview = preview.replace("\r", "")
+                msg_box = QtWidgets.QMessageBox(self)
+                msg_box.setWindowTitle("Overwrite?")
+                msg_box.setText(
+                    "\n".join([
+                        f"{target_file} exists and has content:",
+                        "",
+                        preview,
+                        "",
+                        "Overwrite this file?",
+                    ])
+                )
+                msg_box.setStandardButtons(
                     QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
                 )
-                if resp != QtWidgets.QMessageBox.Yes:
+                msg_box.setStyleSheet(
+                    f"QMessageBox {{ background-color:{BG_PANEL}; color:{FG_TEXT}; }}"
+                    f"QPushButton {{ background-color:{BG_WINDOW}; color:{FG_TEXT}; border:1px solid {ACCENT_FOCUS}; }}"
+                    f"QLabel {{ color:{FG_TEXT}; }}"
+                )
+                if msg_box.exec() != QtWidgets.QMessageBox.Yes:
                     self.console.log_line("[create] Cancelled due to no overwrite.")
                     return
 
-        # write file
+        # write file with high contrast header comment
         default_header = (
-            f"# {filename}\n"
-            f"# Auto-generated by ScriptCreatorApp.\n"
-            f"# High contrast note: always use bright text on dark background in UI.\n\n"
+            f"# {target_file.name}\n"
+            "# Auto-generated by ScriptCreatorApp.\n"
+            "# UI rule: keep high-contrast bright text on dark backgrounds.\n\n"
         )
         write_text_atomic(target_file, default_header)
 
-        # README.md
-        readme_path = dest_path / "README.md"
+        # README.md seeded from description (Ask-mode style)
+        readme_path = project_path / "README.md"
         readme_body = (
-            f"# {base_name}\n\n"
+            f"# {base_project_name}\n\n"
             f"{desc}\n\n"
-            "This project is initialized for the Local Agent.\n"
-            "The agent can plan tasks, propose code changes, and manage this repo.\n"
-            "All approvals are gated inside the UI.\n"
+            "## Local Agent Bootstrap\n"
+            "- Offline-first authority with Ask/Do Work modes.\n"
+            "- High-contrast UI: bright foreground on dark backgrounds at all times.\n"
+            "- Append-only logs in `.codex_local_agent/` mirror all actions.\n"
         )
         write_text_atomic(readme_path, readme_body)
 
-        # bootstrap .codex_local_agent so this folder is immediately agent-ready
-        self._load_repo(str(dest_path))
-        self.console.log_line(f"[create] Created project at {dest_path} with {filename}")
+        self._seed_project_codex_folder(project_path)
+
+        # load repo and open file in editor
+        self._load_repo(str(project_path))
+        self.tabs.open_file(target_file)
+        self.console.log_line(
+            f"[create] Created project at {project_path} with {target_file.name}"
+        )
 
     # ----------------------
     # MINI-APP: AGENT MANAGER HANDLING
     # ----------------------
+
+    def _seed_project_codex_folder(self, project_path: Path) -> None:
+        """Create the minimal .codex_local_agent layout for a new project."""
+        agent_root = project_path / ".codex_local_agent"
+        ensure_dir(agent_root)
+        ensure_dir(agent_root / "dataset")
+        ensure_dir(agent_root / "history")
+        ensure_dir(agent_root / "patches")
+        ensure_dir(agent_root / "logs")
+        ensure_dir(agent_root / "memory")
+        ensure_dir(agent_root / "macros")
+        ensure_dir(agent_root / "styles")
+
+        agent_yaml_path = agent_root / "agent.yaml"
+        if not agent_yaml_path.exists():
+            agent_yaml_lines = [
+                "llm:",
+                "  provider: ollama",
+                "  model: qwen2.5-coder:latest",
+                f"  endpoint: {OLLAMA_CHAT_URL_DEFAULT}",
+                "modes:",
+                "  ask_mode: true",
+                "  do_work_mode: true",
+                "authority:",
+                "  ask_first: true",
+                "  always_allow: false",
+                "  independent_agent_mode: true",
+                "paths:",
+                "  repo_root: '.'",
+                "  dataset_root: '.codex_local_agent/dataset'",
+                "  macro_registry: '.codex_local_agent/macros/registry.jsonl'",
+                "  beans_store: '.codex_local_agent/macros/beans.json'",
+                "styles:",
+                "  active_style: 'default-dark'",
+                "  packs:",
+                "    - '.codex_local_agent/styles/default-dark.json'",
+                "logging:",
+                "  chat_history: 'chat_history.md'",
+                "  sessions_dir: '.codex_local_agent/logs'",
+                "updates:",
+                "  required: 'Required-Updates.md'",
+                "  implemented: 'Implemented-Updates.md'",
+                "  quarantined: 'Quarantined-Updates.md'",
+                "  missing: 'Missing-Updates.md'",
+                "task_index: '.codex_local_agent/Task-Index.json'",
+                "ui:",
+                "  think_render:",
+                "    italic_dim_green: true",
+                "  thumbnails_inline: true",
+                "  high_contrast_enforced: true",
+            ]
+            write_text_atomic(agent_yaml_path, "\n".join(agent_yaml_lines))
+
+        agent_md_path = agent_root / "agent.md"
+        if not agent_md_path.exists():
+            agent_md = "\n".join([
+                "# Local Agent Policy", "", "- High contrast only: light text on dark backgrounds.",
+                "- Offline-first: no network calls without explicit approval.",
+                "- Append-only logging: record actions in logs/session_<date>.md.",
+            ])
+            write_text_atomic(agent_md_path, agent_md)
+
+        chat_history_path = project_path / "chat_history.md"
+        if not chat_history_path.exists():
+            write_text_atomic(chat_history_path, "# Chat History\n")
+
+        dataset_path = agent_root / "dataset" / "memory.jsonl"
+        if not dataset_path.exists():
+            dataset_path.touch()
+
+        memory_dir_readme = agent_root / "memory" / "README.md"
+        if not memory_dir_readme.exists():
+            write_text_atomic(memory_dir_readme, "# Memory\n\nAppend-only memory artifacts live here.\n")
+
+        macros_registry = agent_root / "macros" / "registry.jsonl"
+        if not macros_registry.exists():
+            macros_registry.touch()
+
+        beans_store = agent_root / "macros" / "beans.json"
+        if not beans_store.exists():
+            write_text_atomic(beans_store, "{}\n")
+
+        default_style = agent_root / "styles" / "default-dark.json"
+        if not default_style.exists():
+            write_text_atomic(
+                default_style,
+                json.dumps({
+                    "name": "default-dark",
+                    "term_bg": "#0b1828",
+                    "term_fg": "#e9f3ff",
+                    "accent": "#1E5AFF",
+                }, indent=2),
+            )
+
+        task_index = agent_root / "Task-Index.json"
+        if not task_index.exists():
+            write_text_atomic(task_index, "[]\n")
 
     def _handle_set_authority_mode(self, mode: str):
         """
