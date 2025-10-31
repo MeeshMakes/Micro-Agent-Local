@@ -4,7 +4,7 @@
 | --- | --- | --- | --- |
 | RU-sync | Required-Updates sync loop scaffolding | ✅ | Completed via STUB-20251029-00 to keep planning artifacts in sync. |
 | RU-1 | Chat panel layout and controls overhaul | ✅ | Implemented vertical splitter and inline Ask/Do Work row (chat-panel-vertical). |
-| RU-2 | Dataset buckets and diff memory | ⏳ | Pending implementation (stub STUB-20251029-02). |
+| RU-2 | Dataset buckets and diff memory | ✅ | Bucket store now versions logic, records diffs, and ties dataset rows to bucket_ids. |
 | RU-3 | Mini-app dock and sliding column | ⏳ | Pending implementation (stub STUB-20251029-03). |
 | RU-4 | Script Creator full feature set | ⏳ | Pending implementation (stub STUB-20251029-04). |
 | RU-5 | Agent Manager authority + sharing extensions | ⏳ | Pending implementation (stub STUB-20251029-05). |
@@ -15,3 +15,5 @@
 ✅ 2025-10-30T14:07:42.757012+00:00 Chat panel layout vertical stack and relocated controls — Required-Updates.md:§1
 
 ✅ 2025-10-30T15:05:52+0000 Chat panel vertical stack + send-mode controls relocated near input — Required-Updates.md:§1
+
+✅ 2025-10-31T00:06:52+00:00 Dataset capture writes bucket-linked rows with dual OCR and diff logging — Required-Updates.md:§2

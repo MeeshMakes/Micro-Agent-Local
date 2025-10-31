@@ -201,6 +201,16 @@ def read_text_safe(p: Path) -> str:
         return ""
 
 
+def normalize_space(text: str) -> str:
+    """Collapse whitespace for hashing / comparisons."""
+    return " ".join(text.split())
+
+
+def semantic_sha(text: str) -> str:
+    """Stable semantic hash for bucket content."""
+    return hashlib.sha256(normalize_space(text).encode("utf-8")).hexdigest()
+
+
 def write_text_atomic(p: Path, data: str) -> None:
     tmp = p.with_suffix(p.suffix + ".tmp")
     tmp.write_text(data, encoding="utf-8")
@@ -319,6 +329,139 @@ def compute_sha256(path: Path) -> str:
     except Exception:
         return "unreadable"
 
+
+# --------------------------
+# BUCKET STORE (logic bucketization + diff tracking)
+# --------------------------
+
+
+class BucketStore:
+    """Append-only bucket + diff store for logical directives."""
+
+    def __init__(self, memory_dir: Path):
+        self.root = memory_dir / "buckets"
+        ensure_dir(self.root)
+        self.versions_path = self.root / "bucket_versions.jsonl"
+        self.status_path = self.root / "bucket_status.jsonl"
+        self.diff_path = self.root / "bucket_diffs.jsonl"
+
+    # ---------- helpers ----------
+
+    def _append_json(self, path: Path, obj: Dict) -> None:
+        with path.open("a", encoding="utf-8") as fp:
+            fp.write(json.dumps(obj) + "\n")
+
+    def _derive_bucket_id(self, role: str, markdown_block: str) -> Tuple[str, str]:
+        stripped = markdown_block.strip()
+        if not stripped:
+            base = f"{role.lower()}-empty"
+        else:
+            first_line = stripped.splitlines()[0]
+            topic_key = normalize_space(first_line.lower())
+            if not topic_key:
+                topic_key = f"{role.lower()} generic"
+            digest = hashlib.sha1(topic_key.encode("utf-8")).hexdigest()[:10]
+            base = f"{role.lower()}-{digest}"
+        bucket_id = f"B-{base}"
+        topic = stripped.splitlines()[0].strip() if stripped else "(empty)"
+        return bucket_id, topic
+
+    def _load_latest(self, bucket_id: str) -> Optional[Dict]:
+        if not self.versions_path.exists():
+            return None
+        latest: Optional[Dict] = None
+        with self.versions_path.open("r", encoding="utf-8") as fp:
+            for line in fp:
+                try:
+                    obj = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if obj.get("bucket_id") == bucket_id:
+                    latest = obj
+        return latest
+
+    def _append_status(self, bucket_id: str, version: int, status: str, timestamp: str) -> None:
+        self._append_json(
+            self.status_path,
+            {
+                "timestamp": timestamp,
+                "bucket_id": bucket_id,
+                "version": version,
+                "status": status,
+            },
+        )
+
+    def _append_diff(
+        self,
+        bucket_id: str,
+        from_version: int,
+        to_version: int,
+        diff_text: str,
+        timestamp: str,
+    ) -> None:
+        self._append_json(
+            self.diff_path,
+            {
+                "timestamp": timestamp,
+                "bucket_id": bucket_id,
+                "from_version": from_version,
+                "to_version": to_version,
+                "diff": diff_text,
+            },
+        )
+
+    # ---------- public API ----------
+
+    def record_turn(self, role: str, markdown_block: str) -> Optional[str]:
+        stripped = markdown_block.strip()
+        if not stripped:
+            return None
+        bucket_id, topic = self._derive_bucket_id(role, stripped)
+        timestamp = now_iso_utc()
+        sem_hash = semantic_sha(stripped)
+        latest = self._load_latest(bucket_id)
+        if latest and latest.get("semantic_hash") == sem_hash:
+            # Content unchanged; nothing to update.
+            self._append_status(bucket_id, latest["version"], "heartbeat", timestamp)
+            return bucket_id
+
+        version = 1 if not latest else int(latest.get("version", 0)) + 1
+        entry = {
+            "timestamp": timestamp,
+            "bucket_id": bucket_id,
+            "version": version,
+            "role": role,
+            "topic": topic,
+            "tags": ["logic", "chat", role.lower()],
+            "semantic_hash": sem_hash,
+            "content": stripped,
+            "supersedes": latest.get("version") if latest else None,
+        }
+        self._append_json(self.versions_path, entry)
+
+        if latest:
+            self._append_status(bucket_id, int(latest.get("version", 0)), "superseded", timestamp)
+            prev_content = latest.get("content", "").splitlines()
+            new_content = stripped.splitlines()
+            diff = "\n".join(
+                difflib.unified_diff(
+                    prev_content,
+                    new_content,
+                    fromfile=f"{bucket_id} v{latest.get('version')}",
+                    tofile=f"{bucket_id} v{version}",
+                    lineterm="",
+                )
+            )
+            self._append_diff(bucket_id, int(latest.get("version", 0)), version, diff, timestamp)
+
+        self._append_status(bucket_id, version, "current", timestamp)
+        return bucket_id
+
+    def latest_content(self, bucket_id: str) -> Optional[str]:
+        latest = self._load_latest(bucket_id)
+        if not latest:
+            return None
+        return latest.get("content")
 
 # --------------------------
 # OCR PIPELINE (dual-pass stub)
@@ -507,6 +650,8 @@ class RepoSession:
         self.dataset_jsonl_path: Optional[Path] = None
         self.agent_yaml_path: Optional[Path] = None
         self.agent_md_path: Optional[Path] = None
+        self.memory_dir: Optional[Path] = None
+        self.bucket_store: Optional[BucketStore] = None
 
         # defaults
         self.active_model: str = "gpt-oss:20b"
@@ -522,13 +667,16 @@ class RepoSession:
         self.patches_dir = self.agent_dir / "patches"
         self.history_dir = self.agent_dir / "history"
         self.dataset_dir = self.agent_dir / "dataset"
+        self.memory_dir = self.agent_dir / "memory"
 
         ensure_dir(self.agent_dir)
         ensure_dir(self.patches_dir)
         ensure_dir(self.history_dir)
         ensure_dir(self.dataset_dir)
+        ensure_dir(self.memory_dir)
 
         self.dataset_jsonl_path = self.dataset_dir / "memory.jsonl"
+        self.bucket_store = BucketStore(self.memory_dir)
 
         self.agent_yaml_path = self.agent_dir / "agent.yaml"
         if not self.agent_yaml_path.exists():
@@ -619,13 +767,18 @@ class RepoSession:
         with self.chat_history_path.open("a", encoding="utf-8") as fp:
             fp.write(block)
 
+        bucket_id = None
+        if self.bucket_store:
+            bucket_id = self.bucket_store.record_turn(role, markdown_block)
+
         # dataset logging if there are images
         if image_paths:
             self.add_dataset_entry(
                 markdown_block=markdown_block,
                 image_paths=image_paths,
                 ocr_fast=ocr_fast_text,
-                ocr_full=ocr_full_text
+                ocr_full=ocr_full_text,
+                bucket_id=bucket_id,
             )
 
     def add_dataset_entry(
@@ -633,7 +786,8 @@ class RepoSession:
         markdown_block: str,
         image_paths: List[Path],
         ocr_fast: str,
-        ocr_full: str
+        ocr_full: str,
+        bucket_id: Optional[str] = None,
     ) -> None:
         """
         Write a row into dataset/memory.jsonl for local RAG.
@@ -651,14 +805,18 @@ class RepoSession:
         hashes = []
         for p in image_paths:
             hashes.append(compute_sha256(p))
+        tags = {"screenshot", "ocr_capture"}
+        if bucket_id:
+            tags.add(bucket_id)
         row = {
             "timestamp": now_iso_utc(),
             "markdown_block": markdown_block,
             "image_paths": [str(p) for p in image_paths],
             "ocr_fast": ocr_fast,
             "ocr_full": ocr_full,
-            "tags": ["screenshot", "ocr_capture"],
-            "hashes": hashes
+            "tags": sorted(tags),
+            "hashes": hashes,
+            "bucket_id": bucket_id,
         }
         with self.dataset_jsonl_path.open("a", encoding="utf-8") as fp:
             fp.write(json.dumps(row) + "\n")
