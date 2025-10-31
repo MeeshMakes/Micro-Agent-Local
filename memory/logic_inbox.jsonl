@@ -15,3 +15,5 @@
 {"timestamp": "2025-10-31T00:04:10.160800+00:00", "area": "ui.chat", "action": "start chat layout compliance", "why": "Required-Updates.md:\u00a71", "status": "working", "notes": ""}
 {"timestamp": "2025-10-31T00:06:47.797225+00:00", "area": "ui.chat", "action": "implemented dataset buckets", "why": "Required-Updates.md:\u00a72", "status": "done", "notes": ""}
 {"timestamp": "2025-10-31T00:05:30+00:00", "area": "memory.dataset", "action": "start dataset bucket store", "why": "Required-Updates.md:\u00a72", "status": "working", "notes": ""}
+{"timestamp":"2025-10-31T00:56:09Z","area":"ui.dock","action":"start mini-app dock overhaul","why":"Required-Updates.md:§§3-4","status":"working","notes":""}
+{"timestamp":"2025-10-31T01:01:40Z","area":"ui.dock","action":"implemented mini-app dock overhaul","why":"Required-Updates.md:§§3-4","status":"done","notes":""}

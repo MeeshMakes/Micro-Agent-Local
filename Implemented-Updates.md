@@ -21,3 +21,8 @@
 - Task ID: dataset-bucket-store
 - Summary: Added BucketStore versioning with supersession diffs, linked dataset rows to bucket_ids, and persisted dual OCR text/hashes per Required-Updates §2.
 - Evidence: micro_agent.py, docs/changes/CHANGELOG.md, docs/codex-local/required_updates_progress.md, .codex_local_agent/acceptance/dataset_buckets.md, logs/session_2025-10-31.md
+
+## 2025-10-31T01:04:01Z — Mini-app Dock & Script Creator (§§3–4)
+- Task ID: mini-app-dock-script-creator
+- Summary: Labeled dock buttons with a blue arrow handle for slide-out panels and upgraded Script Creator to scaffold `.codex_local_agent` assets, Desktop shortcuts, and overwrite previews per Required-Updates §§3–4.
+- Evidence: micro_agent.py, docs/changes/CHANGELOG.md, docs/codex-local/required_updates_progress.md, .codex_local_agent/acceptance/mini_app_dock_script_creator.md, .codex_local_agent/impl_check/mini_app_dock_script_creator.txt, logs/session_2025-10-31.md

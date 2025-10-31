@@ -23,3 +23,6 @@
 - Introduced an append-only `BucketStore` that versions chat directives, records superseded status, and emits diff artifacts under `.codex_local_agent/memory/buckets`.
 - Linked chat logging to the bucket store so dataset entries carry `bucket_id` tags alongside dual OCR hashes for offline RAG (`micro_agent.py`).
 - Updated dataset logging to include sanitized, deterministic tags and bucket references, fulfilling Required-Updates.md §2.2–§2.5.
+## 2025-10-31T01:02:22+0000 — Mini-app dock arrow and Script Creator bootstrap
+- Reworked the mini-app dock with labeled high-contrast buttons, a slide-out arrow handle, and splitter sizing so panels collapse when inactive yet reopen reliably, meeting Required-Updates.md §§3.1–3.3.
+- Expanded the Script Creator mini-app to enforce project naming, honor Desktop shortcuts, scaffold `.codex_local_agent` with agent.yaml/agent.md/log/dataset assets, and guard overwrites with previews per Required-Updates.md §4.
